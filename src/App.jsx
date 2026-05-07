@@ -432,7 +432,7 @@ function TechnicalMetricsBand({ metrics }) {
         Résultat technique du trajet optimisé
       </div>
 
-      <div style={{
+      <div className="ecoroute-technical-grid" style={{
         display: "grid",
         gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
         gap: 10,
@@ -803,7 +803,7 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative", minHeight: 420 }}>
-      <div style={{
+      <div className="ecoroute-map-topbar" style={{
         position: "absolute",
         top: 12,
         left: 14,
@@ -1335,7 +1335,7 @@ export function App() {
   const risk = riskBadge(metrics?.riskLevel || "Faible");
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#080E1C", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif", color: "#E2E8F0", overflow: "hidden" }}>
+    <div className="ecoroute-root" style={{ display: "flex", height: "100vh", background: "#080E1C", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif", color: "#E2E8F0", overflow: "hidden" }}>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 5px; }
@@ -1431,12 +1431,164 @@ export function App() {
         }
 
         @keyframes truck-map-move { 0%,100% { transform: translate(-5px, -2px); opacity: 0.9; } 50% { transform: translate(5px, 2px); opacity: 1; } }
+        .ecoroute-root {}
+        .ecoroute-sidebar {}
+        .ecoroute-brand {}
+        .ecoroute-nav {}
+        .ecoroute-main {}
+        .ecoroute-header {}
+        .ecoroute-content {}
+        .ecoroute-home-grid {}
+        .ecoroute-left-panel {}
+        .ecoroute-right-panel {}
+        .ecoroute-dashboard-grid {}
+        .ecoroute-map-card {}
+        .ecoroute-map-wrap {}
+        .ecoroute-technical-grid {}
+        .ecoroute-deliveries-grid {}
+        .ecoroute-alert-popup {}
+        .ecoroute-settings-grid {}
+
+        @media (max-width: 1100px) {
+          .ecoroute-home-grid { grid-template-columns: 340px 1fr !important; }
+          .ecoroute-dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+          .ecoroute-technical-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+        }
+
+        @media (max-width: 860px) {
+          .ecoroute-root {
+            flex-direction: column !important;
+            height: auto !important;
+            min-height: 100vh !important;
+            overflow: auto !important;
+          }
+
+          .ecoroute-sidebar {
+            width: 100% !important;
+            max-width: 100% !important;
+            border-right: none !important;
+            border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+            padding: 12px !important;
+            overflow: visible !important;
+          }
+
+          .ecoroute-brand {
+            padding: 0 4px 12px !important;
+            margin-bottom: 10px !important;
+          }
+
+          .ecoroute-nav {
+            flex: none !important;
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            gap: 8px !important;
+            margin-bottom: 12px !important;
+            padding-bottom: 2px !important;
+          }
+
+          .ecoroute-nav button {
+            min-width: max-content !important;
+            padding: 9px 11px !important;
+            white-space: nowrap !important;
+          }
+
+          .ecoroute-sidebar-status {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 10px !important;
+            border-top: none !important;
+            padding-top: 0 !important;
+          }
+
+          .ecoroute-routebot-button {
+            min-height: 58px !important;
+            margin-bottom: 10px !important;
+          }
+
+          .ecoroute-sidebar-status > div { min-height: 58px !important; }
+
+          .ecoroute-main {
+            overflow: visible !important;
+            min-width: 0 !important;
+          }
+
+          .ecoroute-header {
+            height: auto !important;
+            min-height: 58px !important;
+            padding: 12px 14px !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+
+          .ecoroute-content {
+            padding: 12px !important;
+            overflow: visible !important;
+          }
+
+          .ecoroute-home-grid {
+            grid-template-columns: 1fr !important;
+            height: auto !important;
+          }
+
+          .ecoroute-left-panel,
+          .ecoroute-right-panel { overflow: visible !important; }
+
+          .ecoroute-dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .ecoroute-map-card { min-height: 560px !important; }
+          .ecoroute-map-wrap { min-height: 430px !important; }
+          .ecoroute-real-map,
+          .ecoroute-real-map.leaflet-container { min-height: 430px !important; }
+
+          .ecoroute-technical-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .ecoroute-deliveries-grid {
+            grid-template-columns: 1fr !important;
+            height: auto !important;
+          }
+
+          .ecoroute-alert-popup {
+            left: 12px !important;
+            right: 12px !important;
+            top: 72px !important;
+            width: auto !important;
+            max-height: calc(100vh - 92px) !important;
+          }
+
+          .ecoroute-settings-grid { grid-template-columns: 1fr !important; }
+        }
+
+        @media (max-width: 520px) {
+          .ecoroute-header h1 { font-size: 16px !important; }
+          .ecoroute-brand { gap: 9px !important; }
+
+          .ecoroute-dashboard-grid,
+          .ecoroute-technical-grid { grid-template-columns: 1fr !important; }
+
+          .ecoroute-map-card { min-height: 530px !important; }
+          .ecoroute-map-wrap { min-height: 390px !important; }
+          .ecoroute-real-map,
+          .ecoroute-real-map.leaflet-container { min-height: 390px !important; }
+
+          .ecoroute-sidebar-status { grid-template-columns: 1fr !important; }
+          .ecoroute-route-select-grid { grid-template-columns: 1fr !important; }
+          .ecoroute-mode-grid { grid-template-columns: 1fr !important; }
+
+          .ecoroute-map-topbar {
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+
+          .ecoroute-map-topbar > div:first-child {
+            max-width: 100% !important;
+            overflow-x: auto !important;
+          }
+        }
+
       `}</style>
 
       {/* SIDEBAR */}
-      <aside style={{ width: 220, flexShrink: 0, background: "linear-gradient(180deg, #0C1526 0%, #080E1C 100%)", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", padding: "20px 12px", overflow: "hidden" }}>
+      <aside className="ecoroute-sidebar" style={{ width: 220, flexShrink: 0, background: "linear-gradient(180deg, #0C1526 0%, #080E1C 100%)", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", padding: "20px 12px", overflow: "hidden" }}>
         {/* Brand */}
-        <div style={{
+        <div className="ecoroute-brand" style={{
           display: "flex",
           alignItems: "center",
           gap: 11,
@@ -1516,7 +1668,7 @@ export function App() {
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, marginBottom: 18 }}>
+        <nav className="ecoroute-nav" style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, marginBottom: 18 }}>
           {screens.map(({ key, label, icon: Icon }) => {
             const active = activeScreen === key;
             return (
@@ -1544,6 +1696,7 @@ export function App() {
 
         {/* RouteBot sidebar button */}
         <button
+          className="ecoroute-routebot-button"
           type="button"
           onClick={() => {
             setAssistantOpen((v) => !v);
@@ -1607,7 +1760,7 @@ export function App() {
         </button>
 
         {/* Bottom status */}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16, paddingBottom: 6, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="ecoroute-sidebar-status" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16, paddingBottom: 6, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ minHeight: 68, display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.16)", borderRadius: 14 }}>
             <div style={{ width: 36, height: 36, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34D399", animation: "pulse-dot 2s ease infinite", boxShadow: "0 0 12px rgba(52,211,153,0.7)" }} />
@@ -1630,9 +1783,9 @@ export function App() {
       </aside>
 
       {/* MAIN */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div className="ecoroute-main" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Header bar */}
-        <header style={{ height: 60, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, background: "rgba(8,14,28,0.80)", backdropFilter: "blur(12px)", position: "relative", zIndex: 2000 }}>
+        <header className="ecoroute-header" style={{ height: 60, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, background: "rgba(8,14,28,0.80)", backdropFilter: "blur(12px)", position: "relative", zIndex: 2000 }}>
           <div>
             <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Command Center</div>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "#F1F5F9", letterSpacing: "-0.4px", lineHeight: 1.1 }}>
@@ -1692,6 +1845,7 @@ export function App() {
                   }}
                 />
                 <div
+                  className="ecoroute-alert-popup"
                   onClick={(e) => e.stopPropagation()}
                   style={{
                   position: "fixed",
@@ -1844,13 +1998,13 @@ export function App() {
         </header>
 
         {/* Content */}
-        <div style={{ flex: 1, overflow: "auto", padding: 20 }}>
+        <div className="ecoroute-content" style={{ flex: 1, overflow: "auto", padding: 20 }}>
 
           {/* HOME SCREEN */}
           {activeScreen === "home" && (
-            <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: 16, height: "100%" }}>
+            <div className="ecoroute-home-grid" style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: 16, height: "100%" }}>
               {/* Left panel */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 14, overflow: "auto" }}>
+              <div className="ecoroute-left-panel" style={{ display: "flex", flexDirection: "column", gap: 14, overflow: "auto" }}>
                 {/* Route config */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -1861,7 +2015,7 @@ export function App() {
                     <span style={{ fontSize: 10, color: "#475569", fontWeight: 600, background: "rgba(255,255,255,0.04)", padding: "3px 8px", borderRadius: 6 }}>Config. rapide</span>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  <div className="ecoroute-route-select-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                     {[
                       { label: "Départ", value: startCity, setter: setStartCity },
                       { label: "Destination", value: destinationCity, setter: setDestinationCity },
@@ -1888,7 +2042,7 @@ export function App() {
 
                   <div style={{ marginBottom: 12 }}>
                     <label style={{ display: "block", fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Mode d'optimisation</label>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                    <div className="ecoroute-mode-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
                       {Object.entries(modes).map(([key, m]) => {
                         const Icon = m.icon;
                         const active = mode === key;
@@ -1981,14 +2135,14 @@ export function App() {
               </div>
 
               {/* Right: map + metrics */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="ecoroute-right-panel" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {/* Metrics band */}
                 <div style={{ animation: "slide-up 0.3s ease" }}>
                   <SectionPillTitle color="#6EE7B7">
                     Indicateurs du tableau de bord
                   </SectionPillTitle>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+                  <div className="ecoroute-dashboard-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
                     <StatCard icon={Package} label="Livraisons planifiées" value="4" suffix="arrêts" color="#818CF8" />
                     <StatCard icon={Truck} label="Camions actifs" value="4" suffix="camions" color="#60A5FA" />
                     <StatCard icon={TrendingDown} label="Argent économisé" value="620" suffix="MAD" color="#6EE7B7" />
@@ -1998,7 +2152,7 @@ export function App() {
                 </div>
 
                 {/* Map card */}
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                <div className="ecoroute-map-card" style={{ flex: 1, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                   <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Map size={14} color="#475569" />
@@ -2016,7 +2170,7 @@ export function App() {
                       </div>
                     </div>
                   </div>
-                  <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
+                  <div className="ecoroute-map-wrap" style={{ flex: 1, position: "relative", minHeight: 0 }}>
                     <RealMap
                       fromCity={hasRoute ? optimizedStartCity : startCity}
                       toCity={hasRoute ? optimizedDestinationCity : destinationCity}
@@ -2036,7 +2190,7 @@ export function App() {
 
           {/* DELIVERIES SCREEN */}
           {activeScreen === "deliveries" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, height: "100%" }}>
+            <div className="ecoroute-deliveries-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, height: "100%" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ fontSize: 11, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4 }}>
                   Arrêts planifiés — {deliveryStops.length} livraisons
@@ -2415,7 +2569,7 @@ export function App() {
                   </span>
                 </div>
 
-                <div style={{
+                <div className="ecoroute-settings-grid" style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                   gap: 12,
