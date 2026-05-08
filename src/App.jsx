@@ -2122,7 +2122,7 @@ export function App() {
                         <label style={{ display: "block", fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5 }}>{item.label}</label>
                         <div style={{ position: "relative" }}>
                           <select
-                            value={item.value}
+                            value={item.value || ""}
                             onChange={(e) => {
                               item.setter(e.target.value);
                               setHasRoute(false);
