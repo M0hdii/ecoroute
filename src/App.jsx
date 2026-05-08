@@ -1856,9 +1856,9 @@ export function App() {
         {/* Header bar */}
         <header className="ecoroute-header" style={{ height: 60, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, background: "rgba(8,14,28,0.80)", backdropFilter: "blur(12px)", position: "relative", zIndex: 2000 }}>
           <div>
-            <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Command Center</div>
+            <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}></div>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "#F1F5F9", letterSpacing: "-0.4px", lineHeight: 1.1 }}>
-              {activeScreen === "team" ? "Équipe" : screens.find(s => s.key === activeScreen)?.label}
+              {activeScreen === "team" ? "Équipe projet" : screens.find(s => s.key === activeScreen)?.label}
             </h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2695,7 +2695,7 @@ export function App() {
                       background: "#6EE7B7",
                       boxShadow: "0 0 14px rgba(110,231,183,0.85)",
                     }} />
-                    EcoRoute AI
+                    EcoRoute
                   </div>
 
                   <h2 style={{
@@ -2715,7 +2715,7 @@ export function App() {
                     lineHeight: 1.7,
                     fontWeight: 600,
                   }}>
-                    L'équipe derrière EcoRoute AI réunit des profils engagés autour d'une même vision :
+                    L'équipe derrière EcoRoute réunit des profils engagés autour d'une même vision :
                     rendre la logistique plus intelligente, plus fluide et plus durable.
                   </p>
                 </div>
