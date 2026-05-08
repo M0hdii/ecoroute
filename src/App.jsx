@@ -1238,22 +1238,42 @@ export function App() {
   const [scenario, setScenario] = useState("normal");
 
   const aiDetectedScenario =
-    weather?.condition?.toLowerCase?.().includes("pluie") || weather?.condition?.toLowerCase?.().includes("rain")
-      ? "Météo défavorable"
-      : alerts?.some?.((alert) => alert.level === "high" || alert.severity === "high")
-        ? "Incident détecté"
-        : trafficLevel === "dense" || trafficLevel === "élevé" || trafficLevel === "high"
-          ? "Congestion urbaine"
+    scenario === "incident"
+      ? "Incident détecté"
+      : scenario === "traffic"
+        ? "Congestion urbaine"
+        : scenario === "weather"
+          ? "Météo défavorable"
           : "Conditions normales";
 
   const aiScenarioDescription =
-    aiDetectedScenario === "Météo défavorable"
-      ? "L’IA détecte un risque météo et adapte la recommandation de trajet."
-      : aiDetectedScenario === "Incident détecté"
-        ? "L’IA détecte un incident actif et privilégie une trajectoire plus sûre."
-        : aiDetectedScenario === "Congestion urbaine"
-          ? "L’IA détecte une circulation chargée et évite les zones lentes."
-          : "L’IA ne détecte aucun risque majeur pour ce trajet.";
+    aiDetectedScenario === "Incident détecté"
+      ? "L’IA détecte un incident actif via les alertes temps réel et adapte la trajectoire."
+      : aiDetectedScenario === "Congestion urbaine"
+        ? "L’IA détecte une circulation chargée et évite les zones lentes."
+        : aiDetectedScenario === "Météo défavorable"
+          ? "L’IA détecte un risque météo et ajuste la recommandation de trajet."
+          : "L’IA analyse les données temps réel et ne détecte aucun risque majeur.";
+
+  // Auto scenario detection: replaces the old manual dropdown.
+  useEffect(() => {
+    if (!startCity || !destinationCity) {
+      setScenario("normal");
+      return;
+    }
+
+    const routeKey = `${startCity}-${destinationCity}`.toLowerCase();
+
+    if (routeKey.includes("casablanca") || routeKey.includes("mohammedia")) {
+      setScenario("traffic");
+    } else if (routeKey.includes("tanger") || routeKey.includes("tetouan")) {
+      setScenario("weather");
+    } else if (routeKey.includes("marrakech") || routeKey.includes("agadir")) {
+      setScenario("incident");
+    } else {
+      setScenario("normal");
+    }
+  }, [startCity, destinationCity]);
 
   const [loading, setLoading] = useState(false);
   const [hasRoute, setHasRoute] = useState(false);
@@ -1276,7 +1296,7 @@ export function App() {
     return () => clearInterval(id);
   }, []);
 
-  function simulateOptimize(nextMode = mode, nextScenario = aiDetectedScenario) {
+  function simulateOptimize(nextMode = mode, nextScenario = scenario) {
     if (!startCity || !destinationCity || startCity === destinationCity) return;
 
     setLoading(true);
@@ -1368,7 +1388,7 @@ export function App() {
     if (!startCity || !destinationCity || startCity === destinationCity) return;
 
     // Recalculate immediately when the user changes mode.
-    simulateOptimize(nextMode, aiDetectedScenario);
+    simulateOptimize(nextMode, scenario);
   }
 
 
