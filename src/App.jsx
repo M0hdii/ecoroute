@@ -1797,7 +1797,7 @@ export function App() {
         {/* Header bar */}
         <header className="ecoroute-header" style={{ height: 60, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, background: "rgba(8,14,28,0.80)", backdropFilter: "blur(12px)", position: "relative", zIndex: 2000 }}>
           <div>
-            <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Command Center</div>
+            <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}></div>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "#F1F5F9", letterSpacing: "-0.4px", lineHeight: 1.1 }}>
               {activeScreen === "team" ? "Équipe" : screens.find(s => s.key === activeScreen)?.label}
             </h1>
