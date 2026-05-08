@@ -2114,28 +2114,84 @@ export function App() {
                   </div>
 
                   <div className="ecoroute-route-select-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-                    {[
-                      { label: "Départ", value: startCity, setter: setStartCity },
-                      { label: "Destination", value: destinationCity, setter: setDestinationCity },
-                    ].map((item) => (
-                      <div key={item.label}>
-                        <label style={{ display: "block", fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5 }}>{item.label}</label>
-                        <div style={{ position: "relative" }}>
-                          <select
-                            value={item.value || ""}
-                            onChange={(e) => {
-                              item.setter(e.target.value);
-                              setHasRoute(false);
-                              setMetrics(null);
-                            }}
-                            style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)", color: "#E2E8F0", borderRadius: 9, padding: "8px 28px 8px 10px", fontSize: 12, fontWeight: 600, outline: "none" }}
-                          >
-                            {Object.entries(cities).map(([k, c]) => <option key={k} value={k} style={{ color: "#0F172A", background: "#FFFFFF" }}>{c.label}</option>)}
-                          </select>
-                          <ChevronRight size={12} color="#475569" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%) rotate(90deg)", pointerEvents: "none" }} />
-                        </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5 }}>
+                        Départ
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={startCity}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setStartCity(value);
+                            setHasRoute(false);
+                            setMetrics(null);
+
+                            if (value === destinationCity) {
+                              setDestinationCity("");
+                            }
+                          }}
+                          style={{
+                            width: "100%",
+                            background: "rgba(255,255,255,0.04)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            color: startCity ? "#E2E8F0" : "#64748B",
+                            borderRadius: 9,
+                            padding: "8px 28px 8px 10px",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            outline: "none",
+                          }}
+                        >
+                          <option value="" disabled style={{ color: "#64748B", background: "#FFFFFF" }}>
+                            Choisir le départ
+                          </option>
+                          {Object.entries(cities).map(([k, c]) => (
+                            <option key={k} value={k} style={{ color: "#0F172A", background: "#FFFFFF" }}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronRight size={12} color="#475569" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%) rotate(90deg)", pointerEvents: "none" }} />
                       </div>
-                    ))}
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5 }}>
+                        Destination
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={destinationCity}
+                          onChange={(e) => {
+                            setDestinationCity(e.target.value);
+                            setHasRoute(false);
+                            setMetrics(null);
+                          }}
+                          style={{
+                            width: "100%",
+                            background: "rgba(255,255,255,0.04)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            color: destinationCity ? "#E2E8F0" : "#64748B",
+                            borderRadius: 9,
+                            padding: "8px 28px 8px 10px",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            outline: "none",
+                          }}
+                        >
+                          <option value="" disabled style={{ color: "#64748B", background: "#FFFFFF" }}>
+                            Choisir la destination
+                          </option>
+                          {Object.entries(cities).map(([k, c]) => (
+                            <option key={k} value={k} disabled={k === startCity} style={{ color: "#0F172A", background: "#FFFFFF" }}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronRight size={12} color="#475569" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%) rotate(90deg)", pointerEvents: "none" }} />
+                      </div>
+                    </div>
                   </div>
 
                   <div style={{ marginBottom: 12 }}>
