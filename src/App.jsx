@@ -1799,7 +1799,7 @@ export function App() {
           <div>
             <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}></div>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "#F1F5F9", letterSpacing: "-0.4px", lineHeight: 1.1 }}>
-              {activeScreen === "team" ? "Équipe" : screens.find(s => s.key === activeScreen)?.label}
+              {activeScreen === "team" ? "Équipe projet" : screens.find(s => s.key === activeScreen)?.label}
             </h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
