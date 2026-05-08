@@ -181,6 +181,7 @@ const screens = [
   { key: "deliveries", label: "Livraisons", icon: ClipboardList },
   { key: "alerts", label: "Alertes", icon: Bell },
   { key: "co2", label: "Rapport CO₂", icon: TrendingDown },
+  { key: "team", label: "Équipe", icon: CheckCircle2 },
   { key: "settings", label: "Paramètres", icon: Settings },
 ];
 
@@ -1554,6 +1555,7 @@ export function App() {
           }
 
           .ecoroute-settings-grid { grid-template-columns: 1fr !important; }
+          .ecoroute-team-members-grid { grid-template-columns: 1fr !important; }
         }
 
         @media (max-width: 520px) {
@@ -2243,7 +2245,7 @@ export function App() {
                       <div style={{ fontSize: 11, color: "#FBBF24", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>Livraison suivie</div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: "#FEF3C7", marginBottom: 6 }}>#{selectedDelivery.stop} · {selectedDelivery.client}</div>
                       <div style={{ fontSize: 12, color: "#94A3B8" }}>
-                        Départ théorique : Kenitra
+                        Départ : Kenitra
                       </div>
                       <div style={{ fontSize: 12, color: "#94A3B8" }}>
                         Suivi automatique : camion en mouvement vers {selectedDelivery.city}
@@ -2487,6 +2489,241 @@ export function App() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* TEAM SCREEN */}
+          {activeScreen === "team" && (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr",
+              gap: 16,
+              maxWidth: 980,
+              margin: "0 auto",
+              width: "100%",
+              animation: "slide-up 0.25s ease",
+            }}>
+              <div style={{
+                position: "relative",
+                overflow: "hidden",
+                borderRadius: 22,
+                padding: 26,
+                background: "linear-gradient(135deg, rgba(129,140,248,0.16), rgba(110,231,183,0.08), rgba(15,23,42,0.72))",
+                border: "1px solid rgba(255,255,255,0.09)",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <div style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "radial-gradient(circle at 18% 20%, rgba(129,140,248,0.20), transparent 34%), radial-gradient(circle at 85% 70%, rgba(110,231,183,0.14), transparent 30%)",
+                  pointerEvents: "none",
+                }} />
+
+                <div style={{ position: "relative", zIndex: 1 }}>
+                  <div style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 11px",
+                    borderRadius: 999,
+                    background: "rgba(110,231,183,0.09)",
+                    border: "1px solid rgba(110,231,183,0.22)",
+                    color: "#BBF7D0",
+                    fontSize: 10,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                    marginBottom: 14,
+                  }}>
+                    <span style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: "#6EE7B7",
+                      boxShadow: "0 0 14px rgba(110,231,183,0.85)",
+                    }} />
+                    EcoRoute AI
+                  </div>
+
+                  <h2 style={{
+                    fontSize: 28,
+                    fontWeight: 950,
+                    color: "#F8FAFC",
+                    letterSpacing: "-0.8px",
+                    marginBottom: 8,
+                  }}>
+                    Équipe projet
+                  </h2>
+
+                  <p style={{
+                    maxWidth: 720,
+                    color: "#94A3B8",
+                    fontSize: 13,
+                    lineHeight: 1.7,
+                    fontWeight: 600,
+                  }}>
+                    Projet développé par El Mehdi Omar Ben El Haj, avec la contribution de l'équipe pour les tests,
+                    les retours et l'amélioration du scénario logistique.
+                  </p>
+                </div>
+              </div>
+
+              <div className="ecoroute-deliveries-grid" style={{
+                display: "grid",
+                gridTemplateColumns: "1.05fr 1.6fr",
+                gap: 16,
+              }}>
+                <div style={{
+                  borderRadius: 18,
+                  padding: 20,
+                  background: "linear-gradient(180deg, rgba(129,140,248,0.10), rgba(255,255,255,0.025))",
+                  border: "1px solid rgba(129,140,248,0.18)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+                }}>
+                  <div style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 17,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "linear-gradient(135deg, #818CF8, #6EE7B7)",
+                    color: "#080E1C",
+                    marginBottom: 16,
+                    boxShadow: "0 18px 44px rgba(129,140,248,0.26)",
+                  }}>
+                    <Navigation size={23} />
+                  </div>
+
+                  <div style={{
+                    fontSize: 11,
+                    color: "#64748B",
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.9,
+                    marginBottom: 6,
+                  }}>
+                    Développeur principal
+                  </div>
+
+                  <div style={{
+                    color: "#F8FAFC",
+                    fontSize: 19,
+                    fontWeight: 950,
+                    lineHeight: 1.2,
+                    marginBottom: 8,
+                  }}>
+                    El Mehdi Omar Ben El Haj
+                  </div>
+
+                  <p style={{
+                    color: "#94A3B8",
+                    fontSize: 12,
+                    lineHeight: 1.65,
+                    fontWeight: 600,
+                  }}>
+                    Responsable du développement, de l'intégration des fonctionnalités, de l'interface et de la logique principale de l'application.
+                  </p>
+                </div>
+
+                <div style={{
+                  borderRadius: 18,
+                  padding: 20,
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02))",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+                }}>
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    marginBottom: 16,
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 15, color: "#F8FAFC", fontWeight: 900 }}>
+                        Contributeurs
+                      </div>
+                      <div style={{ fontSize: 11, color: "#64748B", fontWeight: 700, marginTop: 3 }}>
+                        Tests, retours et soutien au projet
+                      </div>
+                    </div>
+
+                    <span style={{
+                      color: "#C7D2FE",
+                      fontSize: 10,
+                      fontWeight: 900,
+                      padding: "5px 9px",
+                      borderRadius: 999,
+                      background: "rgba(129,140,248,0.10)",
+                      border: "1px solid rgba(129,140,248,0.20)",
+                      whiteSpace: "nowrap",
+                    }}>
+                      6 membres
+                    </span>
+                  </div>
+
+                  <div className="ecoroute-team-members-grid" style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 10,
+                  }}>
+                    {[
+                      "Ossama Ait Abdelhalim",
+                      "Hajar Ait Saleh",
+                      "Bilal Laadioui",
+                      "Saad Daoud",
+                      "Taybi Zayd",
+                      "Kaoutar Enndal",
+                    ].map((name) => (
+                      <div
+                        key={name}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "11px 12px",
+                          borderRadius: 14,
+                          background: "rgba(15,23,42,0.48)",
+                          border: "1px solid rgba(255,255,255,0.075)",
+                        }}
+                      >
+                        <div style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 12,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "linear-gradient(135deg, rgba(129,140,248,0.22), rgba(110,231,183,0.14))",
+                          color: "#C7D2FE",
+                          fontSize: 11,
+                          fontWeight: 950,
+                          flexShrink: 0,
+                        }}>
+                          {name.split(" ").map((part) => part[0]).slice(0, 2).join("")}
+                        </div>
+
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{
+                            color: "#CBD5E1",
+                            fontSize: 12,
+                            fontWeight: 850,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}>
+                            {name}
+                          </div>
+                          <div style={{ color: "#64748B", fontSize: 10, fontWeight: 700, marginTop: 2 }}>
+                            Contribution & retours
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
