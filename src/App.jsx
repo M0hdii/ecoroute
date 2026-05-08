@@ -1682,14 +1682,15 @@ export function App() {
             flexShrink: 0,
           }}>
             <div style={{
-            width: 54,
-            height: 54,
-            borderRadius: 16,
+            width: 64,
+            height: 64,
+            borderRadius: 18,
             overflow: "hidden",
             flexShrink: 0,
-            background: "rgba(15,23,42,0.65)",
-            border: "1px solid rgba(110,231,183,0.32)",
-            boxShadow: "0 14px 34px rgba(110,231,183,0.20)",
+            background: "radial-gradient(circle at 50% 45%, rgba(110,231,183,0.22), rgba(15,23,42,0.72) 62%, rgba(2,6,23,0.95))",
+            border: "1px solid rgba(110,231,183,0.48)",
+            boxShadow: "0 0 0 4px rgba(110,231,183,0.08), 0 16px 42px rgba(34,211,238,0.28)",
+            padding: 3,
           }}>
             <img
               src={ECOROUTE_LOGO_SRC}
@@ -1697,8 +1698,9 @@ export function App() {
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                objectFit: "contain",
                 display: "block",
+                filter: "brightness(1.18) contrast(1.12) saturate(1.16)",
               }}
             />
           </div>
@@ -2750,14 +2752,15 @@ export function App() {
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
                 }}>
                   <div style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 18,
+                    width: 82,
+                    height: 82,
+                    borderRadius: 22,
                     overflow: "hidden",
-                    background: "rgba(15,23,42,0.65)",
-                    border: "1px solid rgba(110,231,183,0.32)",
-                    boxShadow: "0 16px 40px rgba(110,231,183,0.18)",
+                    background: "radial-gradient(circle at 50% 45%, rgba(110,231,183,0.24), rgba(15,23,42,0.72) 62%, rgba(2,6,23,0.96))",
+                    border: "1px solid rgba(110,231,183,0.50)",
+                    boxShadow: "0 0 0 5px rgba(110,231,183,0.08), 0 20px 52px rgba(34,211,238,0.28)",
                     marginBottom: 16,
+                    padding: 4,
                   }}>
                     <img
                       src={ECOROUTE_LOGO_SRC}
@@ -2765,8 +2768,9 @@ export function App() {
                       style={{
                         width: "100%",
                         height: "100%",
-                        objectFit: "cover",
+                        objectFit: "contain",
                         display: "block",
+                        filter: "brightness(1.18) contrast(1.12) saturate(1.16)",
                       }}
                     />
                   </div>
