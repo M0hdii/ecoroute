@@ -181,7 +181,6 @@ const screens = [
   { key: "deliveries", label: "Livraisons", icon: ClipboardList },
   { key: "alerts", label: "Alertes", icon: Bell },
   { key: "co2", label: "Rapport CO₂", icon: TrendingDown },
-  { key: "team", label: "Équipe", icon: CheckCircle2 },
   { key: "settings", label: "Paramètres", icon: Settings },
 ];
 
@@ -1432,36 +1431,6 @@ export function App() {
         }
 
         @keyframes truck-map-move { 0%,100% { transform: translate(-5px, -2px); opacity: 0.9; } 50% { transform: translate(5px, 2px); opacity: 1; } }
-        @keyframes teamFloat {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-8px) rotate(1deg); }
-        }
-
-        @keyframes teamOrbit {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        @keyframes teamBeam {
-          0% { opacity: 0.25; transform: translateX(-18%); }
-          50% { opacity: 0.75; }
-          100% { opacity: 0.25; transform: translateX(18%); }
-        }
-
-        @media (max-width: 860px) {
-          .ecoroute-team-stage {
-            grid-template-columns: 1fr !important;
-          }
-
-          .ecoroute-team-members-grid {
-            grid-template-columns: 1fr !important;
-          }
-
-          .ecoroute-team-mission-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-
         .ecoroute-root {}
         .ecoroute-sidebar {}
         .ecoroute-brand {}
@@ -1534,6 +1503,10 @@ export function App() {
           .ecoroute-routebot-button {
             min-height: 58px !important;
             margin-bottom: 10px !important;
+          }
+
+          .ecoroute-team-shortcut-mobile-fix {
+            margin-top: 0 !important;
           }
 
           .ecoroute-sidebar-status > div { min-height: 58px !important; }
@@ -1726,6 +1699,129 @@ export function App() {
           })}
         </nav>
 
+        {/* Creative team shortcut */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveScreen("team");
+            setAlertsPopupOpen(false);
+          }}
+          style={{
+            width: "100%",
+            border: activeScreen === "team"
+              ? "1px solid rgba(110,231,183,0.34)"
+              : "1px solid rgba(255,255,255,0.08)",
+            background: activeScreen === "team"
+              ? "linear-gradient(135deg, rgba(110,231,183,0.16), rgba(129,140,248,0.10))"
+              : "linear-gradient(135deg, rgba(255,255,255,0.045), rgba(15,23,42,0.28))",
+            borderRadius: 16,
+            padding: 12,
+            marginBottom: 12,
+            textAlign: "left",
+            position: "relative",
+            overflow: "hidden",
+            boxShadow: activeScreen === "team"
+              ? "0 18px 44px rgba(110,231,183,0.12)"
+              : "none",
+          }}
+        >
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(circle at 20% 20%, rgba(110,231,183,0.18), transparent 34%), radial-gradient(circle at 90% 70%, rgba(129,140,248,0.16), transparent 28%)",
+            pointerEvents: "none",
+          }} />
+
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              marginBottom: 10,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "linear-gradient(135deg, #6EE7B7, #818CF8)",
+                  color: "#080E1C",
+                  boxShadow: "0 12px 30px rgba(110,231,183,0.18)",
+                }}>
+                  <CheckCircle2 size={16} />
+                </div>
+
+                <div>
+                  <div style={{
+                    color: "#F8FAFC",
+                    fontSize: 12,
+                    fontWeight: 950,
+                    lineHeight: 1.1,
+                  }}>
+                    Équipe projet
+                  </div>
+                  <div style={{
+                    color: "#64748B",
+                    fontSize: 10,
+                    fontWeight: 750,
+                    marginTop: 2,
+                  }}>
+                    Les personnes derrière EcoRoute
+                  </div>
+                </div>
+              </div>
+
+              <ArrowUpRight size={14} color={activeScreen === "team" ? "#6EE7B7" : "#64748B"} />
+            </div>
+
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+            }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                {["EM", "OA", "HA", "BL"].map((initials, i) => (
+                  <div
+                    key={initials}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: "50%",
+                      marginLeft: i === 0 ? 0 : -7,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: i === 0
+                        ? "linear-gradient(135deg, #818CF8, #6EE7B7)"
+                        : "rgba(15,23,42,0.95)",
+                      border: "1px solid rgba(255,255,255,0.16)",
+                      color: i === 0 ? "#080E1C" : "#C7D2FE",
+                      fontSize: 8,
+                      fontWeight: 950,
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.22)",
+                    }}
+                  >
+                    {initials}
+                  </div>
+                ))}
+              </div>
+
+              <span style={{
+                color: "#94A3B8",
+                fontSize: 10,
+                fontWeight: 850,
+              }}>
+                7 membres
+              </span>
+            </div>
+          </div>
+        </button>
+
         {/* RouteBot sidebar button */}
         <button
           className="ecoroute-routebot-button"
@@ -1821,7 +1917,7 @@ export function App() {
           <div>
             <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Command Center</div>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "#F1F5F9", letterSpacing: "-0.4px", lineHeight: 1.1 }}>
-              {screens.find(s => s.key === activeScreen)?.label}
+              {activeScreen === "team" ? "Équipe" : screens.find(s => s.key === activeScreen)?.label}
             </h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2526,207 +2622,140 @@ export function App() {
           {/* TEAM SCREEN */}
           {activeScreen === "team" && (
             <div style={{
-              width: "100%",
-              minHeight: "100%",
-              display: "flex",
-              flexDirection: "column",
+              display: "grid",
+              gridTemplateColumns: "1fr",
               gap: 16,
+              maxWidth: 980,
+              margin: "0 auto",
+              width: "100%",
               animation: "slide-up 0.25s ease",
             }}>
               <div style={{
                 position: "relative",
                 overflow: "hidden",
-                borderRadius: 26,
-                padding: 28,
-                minHeight: 230,
-                background: "linear-gradient(135deg, rgba(8,14,28,0.92), rgba(15,23,42,0.76)), radial-gradient(circle at 18% 24%, rgba(129,140,248,0.28), transparent 34%), radial-gradient(circle at 82% 70%, rgba(110,231,183,0.18), transparent 34%)",
-                border: "1px solid rgba(255,255,255,0.10)",
-                boxShadow: "0 28px 90px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.06)",
+                borderRadius: 22,
+                padding: 26,
+                background: "linear-gradient(135deg, rgba(129,140,248,0.16), rgba(110,231,183,0.08), rgba(15,23,42,0.72))",
+                border: "1px solid rgba(255,255,255,0.09)",
+                boxShadow: "0 24px 80px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05)",
               }}>
                 <div style={{
                   position: "absolute",
-                  width: 260,
-                  height: 260,
-                  right: -80,
-                  top: -90,
-                  borderRadius: "50%",
-                  border: "1px solid rgba(129,140,248,0.22)",
-                  animation: "teamOrbit 18s linear infinite",
-                }} />
-                <div style={{
-                  position: "absolute",
-                  width: 160,
-                  height: 160,
-                  right: 52,
-                  top: 36,
-                  borderRadius: "50%",
-                  border: "1px dashed rgba(110,231,183,0.22)",
-                  animation: "teamOrbit 12s linear infinite reverse",
-                }} />
-                <div style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 2,
-                  background: "linear-gradient(90deg, transparent, rgba(110,231,183,0.85), rgba(129,140,248,0.85), transparent)",
-                  animation: "teamBeam 4s ease-in-out infinite",
+                  inset: 0,
+                  background: "radial-gradient(circle at 18% 20%, rgba(129,140,248,0.20), transparent 34%), radial-gradient(circle at 85% 70%, rgba(110,231,183,0.14), transparent 30%)",
+                  pointerEvents: "none",
                 }} />
 
-                <div style={{
-                  position: "relative",
-                  zIndex: 1,
-                  maxWidth: 760,
-                }}>
+                <div style={{ position: "relative", zIndex: 1 }}>
                   <div style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
-                    padding: "7px 12px",
+                    padding: "6px 11px",
                     borderRadius: 999,
                     background: "rgba(110,231,183,0.09)",
-                    border: "1px solid rgba(110,231,183,0.24)",
+                    border: "1px solid rgba(110,231,183,0.22)",
                     color: "#BBF7D0",
                     fontSize: 10,
-                    fontWeight: 950,
+                    fontWeight: 900,
                     textTransform: "uppercase",
                     letterSpacing: 1,
-                    marginBottom: 16,
+                    marginBottom: 14,
                   }}>
                     <span style={{
-                      width: 8,
-                      height: 8,
+                      width: 7,
+                      height: 7,
                       borderRadius: "50%",
                       background: "#6EE7B7",
-                      boxShadow: "0 0 15px rgba(110,231,183,0.9)",
+                      boxShadow: "0 0 14px rgba(110,231,183,0.85)",
                     }} />
-                    Crew Board · EcoRoute AI
+                    EcoRoute AI
                   </div>
 
                   <h2 style={{
-                    fontSize: 34,
+                    fontSize: 28,
                     fontWeight: 950,
                     color: "#F8FAFC",
-                    letterSpacing: "-1px",
-                    marginBottom: 10,
-                    lineHeight: 1.05,
+                    letterSpacing: "-0.8px",
+                    marginBottom: 8,
                   }}>
-                    Une équipe derrière chaque route optimisée.
+                    Équipe projet
                   </h2>
 
                   <p style={{
+                    maxWidth: 720,
                     color: "#94A3B8",
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                    fontWeight: 650,
-                    maxWidth: 700,
+                    fontSize: 13,
+                    lineHeight: 1.7,
+                    fontWeight: 600,
                   }}>
-                    EcoRoute AI a été développé par El Mehdi Omar Ben El Haj, avec l'appui de l'équipe pour tester,
-                    challenger les scénarios et améliorer l'expérience de présentation.
+                    Projet développé par El Mehdi Omar Ben El Haj, avec la contribution de l'équipe pour les tests,
+                    les retours et l'amélioration du scénario logistique.
                   </p>
                 </div>
               </div>
 
-              <div className="ecoroute-team-stage" style={{
+              <div className="ecoroute-deliveries-grid" style={{
                 display: "grid",
-                gridTemplateColumns: "360px 1fr",
+                gridTemplateColumns: "1.05fr 1.6fr",
                 gap: 16,
-                alignItems: "stretch",
               }}>
                 <div style={{
-                  position: "relative",
-                  overflow: "hidden",
-                  borderRadius: 24,
-                  padding: 22,
-                  background: "linear-gradient(180deg, rgba(129,140,248,0.16), rgba(15,23,42,0.72))",
-                  border: "1px solid rgba(129,140,248,0.22)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                  borderRadius: 18,
+                  padding: 20,
+                  background: "linear-gradient(180deg, rgba(129,140,248,0.10), rgba(255,255,255,0.025))",
+                  border: "1px solid rgba(129,140,248,0.18)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
                 }}>
                   <div style={{
-                    position: "absolute",
-                    right: -40,
-                    bottom: -40,
-                    width: 150,
-                    height: 150,
-                    borderRadius: "50%",
-                    background: "radial-gradient(circle, rgba(110,231,183,0.16), transparent 70%)",
-                  }} />
-
-                  <div style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 22,
+                    width: 50,
+                    height: 50,
+                    borderRadius: 17,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     background: "linear-gradient(135deg, #818CF8, #6EE7B7)",
                     color: "#080E1C",
-                    marginBottom: 18,
-                    boxShadow: "0 22px 55px rgba(129,140,248,0.32)",
-                    animation: "teamFloat 4s ease-in-out infinite",
+                    marginBottom: 16,
+                    boxShadow: "0 18px 44px rgba(129,140,248,0.26)",
                   }}>
-                    <Navigation size={28} />
+                    <Navigation size={23} />
                   </div>
 
                   <div style={{
                     fontSize: 11,
-                    color: "#A5B4FC",
-                    fontWeight: 950,
+                    color: "#64748B",
+                    fontWeight: 900,
                     textTransform: "uppercase",
-                    letterSpacing: 1,
-                    marginBottom: 7,
+                    letterSpacing: 0.9,
+                    marginBottom: 6,
                   }}>
-                    Project Lead · Full Development
+                    Développeur principal
                   </div>
 
                   <div style={{
                     color: "#F8FAFC",
-                    fontSize: 22,
+                    fontSize: 19,
                     fontWeight: 950,
-                    lineHeight: 1.15,
-                    marginBottom: 10,
+                    lineHeight: 1.2,
+                    marginBottom: 8,
                   }}>
                     El Mehdi Omar Ben El Haj
                   </div>
 
                   <p style={{
-                    color: "#CBD5E1",
-                    fontSize: 13,
-                    lineHeight: 1.7,
+                    color: "#94A3B8",
+                    fontSize: 12,
+                    lineHeight: 1.65,
                     fontWeight: 600,
-                    marginBottom: 18,
                   }}>
-                    Responsable du développement principal, de l'interface, de la logique de simulation, du suivi camion
-                    et de l'intégration des scénarios logistiques.
+                    Responsable du développement, de l'intégration des fonctionnalités, de l'interface et de la logique principale de l'application.
                   </p>
-
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 10,
-                  }}>
-                    {[
-                      ["UI", "Dashboard"],
-                      ["Map", "Trajets"],
-                      ["AI", "RouteBot"],
-                      ["Demo", "Pitch"],
-                    ].map(([a, b]) => (
-                      <div key={a} style={{
-                        borderRadius: 13,
-                        padding: "10px 11px",
-                        background: "rgba(8,14,28,0.42)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                      }}>
-                        <div style={{ fontSize: 14, color: "#F8FAFC", fontWeight: 950 }}>{a}</div>
-                        <div style={{ fontSize: 10, color: "#64748B", fontWeight: 750, marginTop: 2 }}>{b}</div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
                 <div style={{
-                  borderRadius: 24,
-                  padding: 22,
+                  borderRadius: 18,
+                  padding: 20,
                   background: "linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02))",
                   border: "1px solid rgba(255,255,255,0.08)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
@@ -2736,25 +2765,25 @@ export function App() {
                     alignItems: "center",
                     justifyContent: "space-between",
                     gap: 12,
-                    marginBottom: 18,
+                    marginBottom: 16,
                   }}>
                     <div>
-                      <div style={{ fontSize: 16, color: "#F8FAFC", fontWeight: 950 }}>
+                      <div style={{ fontSize: 15, color: "#F8FAFC", fontWeight: 900 }}>
                         Contributeurs
                       </div>
-                      <div style={{ fontSize: 11, color: "#64748B", fontWeight: 750, marginTop: 4 }}>
-                        Retours, tests et validation du scénario logistique
+                      <div style={{ fontSize: 11, color: "#64748B", fontWeight: 700, marginTop: 3 }}>
+                        Tests, retours et soutien au projet
                       </div>
                     </div>
 
                     <span style={{
                       color: "#C7D2FE",
                       fontSize: 10,
-                      fontWeight: 950,
-                      padding: "6px 10px",
+                      fontWeight: 900,
+                      padding: "5px 9px",
                       borderRadius: 999,
                       background: "rgba(129,140,248,0.10)",
-                      border: "1px solid rgba(129,140,248,0.22)",
+                      border: "1px solid rgba(129,140,248,0.20)",
                       whiteSpace: "nowrap",
                     }}>
                       6 membres
@@ -2763,127 +2792,67 @@ export function App() {
 
                   <div className="ecoroute-team-members-grid" style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                    gap: 12,
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 10,
                   }}>
                     {[
-                      { name: "Ossama Ait Abdelhalim", role: "Tests & retours" },
-                      { name: "Hajar Ait Saleh", role: "Feedback UI/UX" },
-                      { name: "Bilal Laadioui", role: "Validation scénario" },
-                      { name: "Saad Daoud", role: "Support présentation" },
-                      { name: "Taybi Zayd", role: "Retours fonctionnels" },
-                      { name: "Kaoutar Enndal", role: "Amélioration contenu" },
-                    ].map((member, index) => (
+                      "Ossama Ait Abdelhalim",
+                      "Hajar Ait Saleh",
+                      "Bilal Laadioui",
+                      "Saad Daoud",
+                      "Taybi Zayd",
+                      "Kaoutar Enndal",
+                    ].map((name) => (
                       <div
-                        key={member.name}
+                        key={name}
                         style={{
-                          position: "relative",
-                          overflow: "hidden",
-                          minHeight: 138,
-                          borderRadius: 18,
-                          padding: 15,
-                          background: "linear-gradient(180deg, rgba(15,23,42,0.66), rgba(15,23,42,0.36))",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "11px 12px",
+                          borderRadius: 14,
+                          background: "rgba(15,23,42,0.48)",
+                          border: "1px solid rgba(255,255,255,0.075)",
                         }}
                       >
                         <div style={{
-                          position: "absolute",
-                          right: -22,
-                          top: -22,
-                          width: 80,
-                          height: 80,
-                          borderRadius: "50%",
-                          background: index % 2 === 0
-                            ? "radial-gradient(circle, rgba(129,140,248,0.18), transparent 70%)"
-                            : "radial-gradient(circle, rgba(110,231,183,0.14), transparent 70%)",
-                        }} />
-
-                        <div style={{
-                          width: 42,
-                          height: 42,
-                          borderRadius: 15,
+                          width: 34,
+                          height: 34,
+                          borderRadius: 12,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          background: index % 2 === 0
-                            ? "linear-gradient(135deg, rgba(129,140,248,0.34), rgba(110,231,183,0.14))"
-                            : "linear-gradient(135deg, rgba(110,231,183,0.24), rgba(129,140,248,0.18))",
-                          border: "1px solid rgba(255,255,255,0.11)",
-                          color: "#F8FAFC",
-                          fontSize: 12,
-                          fontWeight: 950,
-                          marginBottom: 12,
-                          position: "relative",
-                          zIndex: 1,
-                        }}>
-                          {member.name.split(" ").map((part) => part[0]).slice(0, 2).join("")}
-                        </div>
-
-                        <div style={{
-                          color: "#E2E8F0",
-                          fontSize: 13,
-                          fontWeight: 900,
-                          lineHeight: 1.25,
-                          marginBottom: 5,
-                          position: "relative",
-                          zIndex: 1,
-                        }}>
-                          {member.name}
-                        </div>
-
-                        <div style={{
-                          color: "#64748B",
+                          background: "linear-gradient(135deg, rgba(129,140,248,0.22), rgba(110,231,183,0.14))",
+                          color: "#C7D2FE",
                           fontSize: 11,
-                          fontWeight: 750,
-                          position: "relative",
-                          zIndex: 1,
+                          fontWeight: 950,
+                          flexShrink: 0,
                         }}>
-                          {member.role}
+                          {name.split(" ").map((part) => part[0]).slice(0, 2).join("")}
+                        </div>
+
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{
+                            color: "#CBD5E1",
+                            fontSize: 12,
+                            fontWeight: 850,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}>
+                            {name}
+                          </div>
+                          <div style={{ color: "#64748B", fontSize: 10, fontWeight: 700, marginTop: 2 }}>
+                            Contribution & retours
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-
-              <div className="ecoroute-team-mission-grid" style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                gap: 14,
-              }}>
-                {[
-                  { icon: Brain, title: "Idée & logique", text: "Transformer la gestion de tournée en expérience intelligente et visuelle.", color: "#818CF8" },
-                  { icon: Truck, title: "Simulation terrain", text: "Mettre en scène livraisons, incident, recalcul et suivi camion.", color: "#60A5FA" },
-                  { icon: Leaf, title: "Impact durable", text: "Montrer l'effet sur carburant, CO₂, coût et performance logistique.", color: "#6EE7B7" },
-                ].map(({ icon: Icon, title, text, color }) => (
-                  <div key={title} style={{
-                    borderRadius: 18,
-                    padding: 18,
-                    background: "rgba(255,255,255,0.035)",
-                    border: "1px solid rgba(255,255,255,0.075)",
-                  }}>
-                    <div style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: `${color}18`,
-                      border: `1px solid ${color}30`,
-                      marginBottom: 12,
-                    }}>
-                      <Icon size={17} color={color} />
-                    </div>
-                    <div style={{ color: "#F8FAFC", fontSize: 14, fontWeight: 950, marginBottom: 6 }}>{title}</div>
-                    <p style={{ color: "#94A3B8", fontSize: 12, lineHeight: 1.6 }}>{text}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
-
 
           {/* SETTINGS SCREEN */}
           {activeScreen === "settings" && (
