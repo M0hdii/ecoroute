@@ -91,7 +91,8 @@ const cityCoords = {
 };
 
 function getCityCoords(cityKey) {
-  return cityCoords[cityKey] || cityCoords.Casablanca;
+  if (!cityKey) return null;
+  return cityCoords[cityKey] || null;
 }
 
 function getCityKeyFromLabel(label) {
@@ -586,6 +587,41 @@ function createLeafletCityIcon(type = "default") {
   });
 }
 
+
+function createLeafletCityCircleIcon(cityKey, type = "default") {
+  const isStart = type === "start";
+  const isEnd = type === "end";
+
+  const color = isStart ? "#34D399" : isEnd ? "#818CF8" : "#64748B";
+  const size = isStart || isEnd ? 24 : 15;
+  const label = isStart ? "D" : isEnd ? "A" : "";
+
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        width:${size}px;
+        height:${size}px;
+        border-radius:999px;
+        background:${color};
+        border:2px solid rgba(255,255,255,0.94);
+        box-shadow:0 10px 24px rgba(0,0,0,0.34), 0 0 0 7px ${color}24;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:8px;
+        font-weight:900;
+        color:#04111f;
+        font-family:Inter,Arial,sans-serif;
+      ">
+        ${label}
+      </div>
+    `,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
 function createLeafletTruckIcon() {
   return L.divIcon({
     className: "",
@@ -699,12 +735,14 @@ function MovingLeafletTruck({ routePoints, enabled = true, startProgress = 0, sh
   );
 }
 
-function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollowButton = true, truckStartProgress = 0, showStaticTruck = false, autoFollow = false, routeMode = "ai", incidentReroute = false, incidentLabel = "Incident détecté" }) {
+function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollowButton = true, truckStartProgress = 0, showStaticTruck = false, autoFollow = false, routeMode = "ai", incidentReroute = false, incidentLabel = "Incident détecté", onSelectCity }) {
   const [routePoints, setRoutePoints] = useState([]);
   const [followVehicle, setFollowVehicle] = useState(autoFollow);
 
   const fromCoords = getCityCoords(fromCity);
   const toCoords = getCityCoords(toCity);
+  const canShowRoute = Boolean(hasRoute && fromCoords && toCoords);
+  const allCityEntries = Object.entries(cityCoords);
 
   const routeVisual =
     routeMode === "eco"
@@ -724,7 +762,7 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
     let cancelled = false;
 
     async function loadRoadRoute() {
-      if (!hasRoute || !fromCoords || !toCoords) {
+      if (!canShowRoute) {
         setRoutePoints([]);
         return;
       }
@@ -771,7 +809,7 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [fromCity, toCity, hasRoute, routeMode]);
+  }, [fromCity, toCity, hasRoute, routeMode, canShowRoute]);
 
   const incidentIndex =
     incidentReroute && routePoints.length > 4
@@ -829,17 +867,17 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34D399", boxShadow: "0 0 10px #34D399" }} />
           <div>
             <div style={{ fontSize: 9, color: "#64748B", fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.8 }}>Départ</div>
-            <div style={{ fontSize: 12, color: "#E2E8F0", fontWeight: 800 }}>{cities[fromCity]?.label || fromCity}</div>
+            <div style={{ fontSize: 12, color: "#E2E8F0", fontWeight: 800 }}>{cities[fromCity]?.label || "Choisir départ"}</div>
           </div>
           <ArrowRight size={14} color="#64748B" />
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#818CF8", boxShadow: "0 0 10px #818CF8" }} />
           <div>
             <div style={{ fontSize: 9, color: "#64748B", fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.8 }}>Arrivée</div>
-            <div style={{ fontSize: 12, color: "#E2E8F0", fontWeight: 800 }}>{selectedLabel || cities[toCity]?.label || toCity}</div>
+            <div style={{ fontSize: 12, color: "#E2E8F0", fontWeight: 800 }}>{selectedLabel || cities[toCity]?.label || "Choisir destination"}</div>
           </div>
         </div>
 
-        {hasRoute && routePoints.length > 0 && (
+        {canShowRoute && routePoints.length > 0 && (
           <div style={{
             pointerEvents: "auto",
             display: "flex",
@@ -866,7 +904,7 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
           </div>
         )}
 
-        {incidentReroute && hasRoute && routePoints.length > 0 && (
+        {incidentReroute && canShowRoute && routePoints.length > 0 && (
           <div style={{
             pointerEvents: "auto",
             display: "flex",
@@ -893,7 +931,7 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
           </div>
         )}
 
-        {showFollowButton && hasRoute && routePoints.length > 0 && (
+        {showFollowButton && canShowRoute && routePoints.length > 0 && (
           <button
             type="button"
             onClick={() => setFollowVehicle((prev) => !prev)}
@@ -921,7 +959,7 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
       <MapContainer
         className="ecoroute-real-map"
         center={fromCoords || [31.8, -7.2]}
-        zoom={hasRoute ? 8 : 6}
+        zoom={canShowRoute ? 8 : 6}
         minZoom={5}
         maxBounds={[
           [20.5, -17.5],
@@ -936,23 +974,55 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <Marker position={fromCoords} icon={createLeafletCityIcon("start")}>
-          <Popup>
-            <strong>Départ</strong>
-            <br />
-            {cities[fromCity]?.label || fromCity}
-          </Popup>
-        </Marker>
+        {!canShowRoute && allCityEntries.map(([cityKey, coords]) => (
+          <Marker
+            key={cityKey}
+            position={coords}
+            icon={createLeafletCityCircleIcon(
+              cityKey,
+              cityKey === fromCity ? "start" : cityKey === toCity ? "end" : "default"
+            )}
+            eventHandlers={{
+              click: () => onSelectCity?.(cityKey),
+            }}
+          >
+            <Popup>
+              <strong>{cities[cityKey]?.label || cityKey}</strong>
+              <br />
+              {!fromCity
+                ? "Cliquez pour définir le départ."
+                : cityKey === fromCity
+                  ? "Ville de départ sélectionnée."
+                  : !toCity
+                    ? "Cliquez pour définir la destination."
+                    : cityKey === toCity
+                      ? "Destination sélectionnée."
+                      : "Cliquez pour remplacer la destination."}
+            </Popup>
+          </Marker>
+        ))}
 
-        <Marker position={toCoords} icon={createLeafletCityIcon(selectedLabel ? "tracked" : "end")}>
-          <Popup>
-            <strong>{selectedLabel ? "Livraison suivie" : "Destination"}</strong>
-            <br />
-            {selectedLabel || cities[toCity]?.label || toCity}
-          </Popup>
-        </Marker>
+        {fromCoords && (
+          <Marker position={fromCoords} icon={createLeafletCityIcon("start")}>
+            <Popup>
+              <strong>Départ</strong>
+              <br />
+              {cities[fromCity]?.label || fromCity}
+            </Popup>
+          </Marker>
+        )}
 
-        {routePoints.length > 0 && (
+        {toCoords && (
+          <Marker position={toCoords} icon={createLeafletCityIcon(selectedLabel ? "tracked" : "end")}>
+            <Popup>
+              <strong>{selectedLabel ? "Livraison suivie" : "Destination"}</strong>
+              <br />
+              {selectedLabel || cities[toCity]?.label || toCity}
+            </Popup>
+          </Marker>
+        )}
+
+        {canShowRoute && routePoints.length > 0 && (
           <>
             {incidentReroute && blockedOldRoute.length > 1 ? (
               <>
@@ -1084,9 +1154,9 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
             <FitRealRoute routePoints={routePoints} />
             <MovingLeafletTruck
               routePoints={routePoints}
-              enabled={hasRoute && followVehicle}
+              enabled={canShowRoute && followVehicle}
               startProgress={truckStartProgress}
-              showStatic={hasRoute && showStaticTruck}
+              showStatic={canShowRoute && showStaticTruck}
             />
           </>
         )}
@@ -1169,10 +1239,10 @@ function buildRouteBotAnswer({ question, startCity, destinationCity, mode, scena
 
 export function App() {
   const [activeScreen, setActiveScreen] = useState("home");
-  const [startCity, setStartCity] = useState("Kenitra");
-  const [destinationCity, setDestinationCity] = useState("Casablanca");
-  const [optimizedStartCity, setOptimizedStartCity] = useState("Kenitra");
-  const [optimizedDestinationCity, setOptimizedDestinationCity] = useState("Casablanca");
+  const [startCity, setStartCity] = useState("");
+  const [destinationCity, setDestinationCity] = useState("");
+  const [optimizedStartCity, setOptimizedStartCity] = useState("");
+  const [optimizedDestinationCity, setOptimizedDestinationCity] = useState("");
   const [mode, setMode] = useState("ai");
   const [scenario, setScenario] = useState("normal");
   const [loading, setLoading] = useState(false);
@@ -1197,7 +1267,7 @@ export function App() {
   }, []);
 
   function simulateOptimize(nextMode = mode, nextScenario = scenario) {
-    if (startCity === destinationCity) return;
+    if (!startCity || !destinationCity || startCity === destinationCity) return;
 
     setLoading(true);
 
@@ -1285,7 +1355,7 @@ export function App() {
   function handleModeChange(nextMode) {
     setMode(nextMode);
 
-    if (startCity === destinationCity) return;
+    if (!startCity || !destinationCity || startCity === destinationCity) return;
 
     // Recalculate immediately when the user changes mode.
     simulateOptimize(nextMode, scenario);
@@ -1319,6 +1389,22 @@ export function App() {
     askRouteBot(assistantInput);
   }
 
+
+  function handleMapCitySelect(cityKey) {
+    setHasRoute(false);
+    setMetrics(null);
+
+    if (!startCity) {
+      setStartCity(cityKey);
+      return;
+    }
+
+    if (cityKey === startCity) {
+      return;
+    }
+
+    setDestinationCity(cityKey);
+  }
 
   function handleSelectDelivery(delivery) {
     if (deliveryClickLocked) return;
@@ -1797,9 +1883,9 @@ export function App() {
         {/* Header bar */}
         <header className="ecoroute-header" style={{ height: 60, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, background: "rgba(8,14,28,0.80)", backdropFilter: "blur(12px)", position: "relative", zIndex: 2000 }}>
           <div>
-            <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}></div>
+            <div style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Command Center</div>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "#F1F5F9", letterSpacing: "-0.4px", lineHeight: 1.1 }}>
-              {activeScreen === "team" ? "Équipe projet" : screens.find(s => s.key === activeScreen)?.label}
+              {activeScreen === "team" ? "Équipe" : screens.find(s => s.key === activeScreen)?.label}
             </h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2125,7 +2211,7 @@ export function App() {
 
                   <button
                     onClick={simulateOptimize}
-                    disabled={loading || startCity === destinationCity}
+                    disabled={loading || !startCity || !destinationCity || startCity === destinationCity}
                     style={{ width: "100%", padding: "12px 16px", borderRadius: 11, border: 0, background: loading ? "rgba(129,140,248,0.3)" : "linear-gradient(135deg, #818CF8, #6EE7B7)", color: "#080E1C", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: loading ? "none" : "0 8px 24px rgba(129,140,248,0.28)" }}
                   >
                     {loading ? (
@@ -2216,6 +2302,7 @@ export function App() {
                       hasRoute={hasRoute}
                       showFollowButton
                       routeMode={mode}
+                      onSelectCity={handleMapCitySelect}
                     />
                   </div>
                   {metrics && <TechnicalMetricsBand metrics={metrics} />}
@@ -2580,7 +2667,7 @@ export function App() {
                       background: "#6EE7B7",
                       boxShadow: "0 0 14px rgba(110,231,183,0.85)",
                     }} />
-                    EcoRoute
+                    EcoRoute AI
                   </div>
 
                   <h2 style={{
