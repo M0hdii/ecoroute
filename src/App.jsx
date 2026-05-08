@@ -1663,105 +1663,81 @@ export function App() {
           display: "flex",
           alignItems: "center",
           gap: 12,
-          padding: "2px 4px 0 4px",
+          padding: "0 4px 18px 4px",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
           marginBottom: 16,
-          position: "relative",
+          minWidth: 0,
         }}>
           <div style={{
-            width: 40,
-            height: 40,
-            borderRadius: 13,
-            background: "linear-gradient(135deg, #818CF8 0%, #6EE7B7 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            animation: "brandGlow 3.2s ease-in-out infinite",
-            position: "relative",
+            width: 58,
+            height: 58,
+            minWidth: 58,
+            borderRadius: 17,
             overflow: "hidden",
-            flexShrink: 0,
+            flex: "0 0 58px",
+            background: "radial-gradient(circle at center, rgba(34,211,238,0.20), rgba(15,23,42,0.82) 62%, rgba(2,6,23,0.96))",
+            border: "1px solid rgba(110,231,183,0.42)",
+            boxShadow: "0 0 0 4px rgba(110,231,183,0.06), 0 14px 34px rgba(34,211,238,0.24)",
+            padding: 2,
           }}>
-            <div style={{
+            <img
+              src={ECOROUTE_LOGO_SRC}
+              alt="EcoRoute logo"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+                filter: "brightness(1.18) contrast(1.12) saturate(1.14)",
+              }}
+            />
+          </div>
+
+          <div style={{
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
+            alignItems: "flex-start",
             minWidth: 0,
+            flex: 1,
             paddingTop: 1,
           }}>
             <div style={{
-              color: "#F8FAFC",
               fontSize: 17,
               fontWeight: 950,
-              lineHeight: 1,
-              letterSpacing: "-0.35px",
-              marginBottom: 7,
-            }}>
-              EcoRoute
-            </div>
-
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "8px 1fr",
-              columnGap: 8,
-              alignItems: "start",
-            }}>
-              <span style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#6EE7B7",
-                boxShadow: "0 0 12px rgba(110,231,183,0.85)",
-                marginTop: 4,
-              }} />
-              <div style={{
-                color: "#D7E4F6",
-                fontSize: 12,
-                fontWeight: 900,
-                lineHeight: 1.22,
-                letterSpacing: "0.15px",
-              }}>
-                <div>Trace ta route.</div>
-                <div>Livre mieux.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-          <div style={{ minWidth: 0 }}>
-            <div style={{
-              fontSize: 15,
-              fontWeight: 950,
               color: "#F8FAFC",
               letterSpacing: "-0.35px",
-              lineHeight: 1,
+              lineHeight: "18px",
               textShadow: "0 8px 24px rgba(0,0,0,0.35)",
+              marginBottom: 8,
+              whiteSpace: "nowrap",
             }}>
               EcoRoute
             </div>
 
             <div style={{
-              marginTop: 5,
               display: "flex",
-              alignItems: "center",
-              gap: 6,
+              alignItems: "flex-start",
+              gap: 8,
               minWidth: 0,
             }}>
               <span style={{
-                width: 6,
-                height: 6,
+                width: 7,
+                height: 7,
+                minWidth: 7,
                 borderRadius: "50%",
                 background: "#6EE7B7",
                 boxShadow: "0 0 12px rgba(110,231,183,0.9)",
                 animation: "sloganDot 1.8s ease-in-out infinite",
-                flexShrink: 0,
+                marginTop: 4,
               }} />
 
               <div style={{
-                fontSize: 10.5,
-                fontWeight: 850,
-                letterSpacing: 0.25,
-                lineHeight: 1.25,
-                background: "linear-gradient(90deg, #94A3B8, #E0E7FF, #6EE7B7, #94A3B8)",
+                fontSize: 12,
+                fontWeight: 900,
+                letterSpacing: 0.15,
+                lineHeight: "15px",
+                background: "linear-gradient(90deg, #D7E4F6, #FFFFFF, #6EE7B7, #D7E4F6)",
                 backgroundSize: "220% 220%",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
