@@ -2580,7 +2580,7 @@ export function App() {
                       background: "#6EE7B7",
                       boxShadow: "0 0 14px rgba(110,231,183,0.85)",
                     }} />
-                    EcoRoute AI
+                    EcoRoute
                   </div>
 
                   <h2 style={{
