@@ -593,7 +593,7 @@ function createLeafletCityCircleIcon(cityKey, type = "default") {
   const isEnd = type === "end";
 
   const color = isStart ? "#34D399" : isEnd ? "#818CF8" : "#64748B";
-  const size = isStart || isEnd ? 24 : 15;
+  const size = isStart || isEnd ? 22 : 14;
   const label = isStart ? "D" : isEnd ? "A" : "";
 
   return L.divIcon({
@@ -604,8 +604,8 @@ function createLeafletCityCircleIcon(cityKey, type = "default") {
         height:${size}px;
         border-radius:999px;
         background:${color};
-        border:2px solid rgba(255,255,255,0.94);
-        box-shadow:0 10px 24px rgba(0,0,0,0.34), 0 0 0 7px ${color}24;
+        border:2px solid rgba(255,255,255,0.92);
+        box-shadow:0 10px 24px rgba(0,0,0,0.34), 0 0 0 6px ${color}22;
         display:flex;
         align-items:center;
         justify-content:center;
@@ -735,7 +735,7 @@ function MovingLeafletTruck({ routePoints, enabled = true, startProgress = 0, sh
   );
 }
 
-function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollowButton = true, truckStartProgress = 0, showStaticTruck = false, autoFollow = false, routeMode = "ai", incidentReroute = false, incidentLabel = "Incident détecté", onSelectCity }) {
+function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollowButton = true, truckStartProgress = 0, showStaticTruck = false, autoFollow = false, routeMode = "ai", incidentReroute = false, incidentLabel = "Incident détecté" }) {
   const [routePoints, setRoutePoints] = useState([]);
   const [followVehicle, setFollowVehicle] = useState(autoFollow);
 
@@ -982,22 +982,11 @@ function RealMap({ fromCity, toCity, hasRoute, metrics, selectedLabel, showFollo
               cityKey,
               cityKey === fromCity ? "start" : cityKey === toCity ? "end" : "default"
             )}
-            eventHandlers={{
-              click: () => onSelectCity?.(cityKey),
-            }}
           >
             <Popup>
               <strong>{cities[cityKey]?.label || cityKey}</strong>
               <br />
-              {!fromCity
-                ? "Cliquez pour définir le départ."
-                : cityKey === fromCity
-                  ? "Ville de départ sélectionnée."
-                  : !toCity
-                    ? "Cliquez pour définir la destination."
-                    : cityKey === toCity
-                      ? "Destination sélectionnée."
-                      : "Cliquez pour remplacer la destination."}
+              Ville disponible pour la tournée.
             </Popup>
           </Marker>
         ))}
@@ -1389,22 +1378,6 @@ export function App() {
     askRouteBot(assistantInput);
   }
 
-
-  function handleMapCitySelect(cityKey) {
-    setHasRoute(false);
-    setMetrics(null);
-
-    if (!startCity) {
-      setStartCity(cityKey);
-      return;
-    }
-
-    if (cityKey === startCity) {
-      return;
-    }
-
-    setDestinationCity(cityKey);
-  }
 
   function handleSelectDelivery(delivery) {
     if (deliveryClickLocked) return;
@@ -2302,7 +2275,6 @@ export function App() {
                       hasRoute={hasRoute}
                       showFollowButton
                       routeMode={mode}
-                      onSelectCity={handleMapCitySelect}
                     />
                   </div>
                   {metrics && <TechnicalMetricsBand metrics={metrics} />}
