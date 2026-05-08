@@ -2590,7 +2590,7 @@ export function App() {
                     letterSpacing: "-0.8px",
                     marginBottom: 8,
                   }}>
-                    Équipe projet
+                    L'équipe derrière EcoRoute
                   </h2>
 
                   <p style={{
@@ -2600,8 +2600,8 @@ export function App() {
                     lineHeight: 1.7,
                     fontWeight: 600,
                   }}>
-                    Projet développé par El Mehdi Omar Ben El Haj, avec la contribution de l'équipe pour les tests,
-                    les retours et l'amélioration du scénario logistique.
+                    L'équipe derrière EcoRoute AI réunit des profils engagés autour d'une même vision :
+                    rendre la logistique plus intelligente, plus fluide et plus durable.
                   </p>
                 </div>
               </div>
