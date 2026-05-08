@@ -1524,6 +1524,11 @@ export function App() {
             gap: 12px !important;
           }
 
+          .ecoroute-header > div:last-child {
+            flex-wrap: wrap !important;
+            justify-content: flex-end !important;
+          }
+
           .ecoroute-content {
             padding: 12px !important;
             overflow: visible !important;
@@ -1699,129 +1704,6 @@ export function App() {
           })}
         </nav>
 
-        {/* Creative team shortcut */}
-        <button
-          type="button"
-          onClick={() => {
-            setActiveScreen("team");
-            setAlertsPopupOpen(false);
-          }}
-          style={{
-            width: "100%",
-            border: activeScreen === "team"
-              ? "1px solid rgba(110,231,183,0.34)"
-              : "1px solid rgba(255,255,255,0.08)",
-            background: activeScreen === "team"
-              ? "linear-gradient(135deg, rgba(110,231,183,0.16), rgba(129,140,248,0.10))"
-              : "linear-gradient(135deg, rgba(255,255,255,0.045), rgba(15,23,42,0.28))",
-            borderRadius: 16,
-            padding: 12,
-            marginBottom: 12,
-            textAlign: "left",
-            position: "relative",
-            overflow: "hidden",
-            boxShadow: activeScreen === "team"
-              ? "0 18px 44px rgba(110,231,183,0.12)"
-              : "none",
-          }}
-        >
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: "radial-gradient(circle at 20% 20%, rgba(110,231,183,0.18), transparent 34%), radial-gradient(circle at 90% 70%, rgba(129,140,248,0.16), transparent 28%)",
-            pointerEvents: "none",
-          }} />
-
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-              marginBottom: 10,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 12,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "linear-gradient(135deg, #6EE7B7, #818CF8)",
-                  color: "#080E1C",
-                  boxShadow: "0 12px 30px rgba(110,231,183,0.18)",
-                }}>
-                  <CheckCircle2 size={16} />
-                </div>
-
-                <div>
-                  <div style={{
-                    color: "#F8FAFC",
-                    fontSize: 12,
-                    fontWeight: 950,
-                    lineHeight: 1.1,
-                  }}>
-                    Équipe projet
-                  </div>
-                  <div style={{
-                    color: "#64748B",
-                    fontSize: 10,
-                    fontWeight: 750,
-                    marginTop: 2,
-                  }}>
-                    Les personnes derrière EcoRoute
-                  </div>
-                </div>
-              </div>
-
-              <ArrowUpRight size={14} color={activeScreen === "team" ? "#6EE7B7" : "#64748B"} />
-            </div>
-
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 8,
-            }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                {["EM", "OA", "HA", "BL"].map((initials, i) => (
-                  <div
-                    key={initials}
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: "50%",
-                      marginLeft: i === 0 ? 0 : -7,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: i === 0
-                        ? "linear-gradient(135deg, #818CF8, #6EE7B7)"
-                        : "rgba(15,23,42,0.95)",
-                      border: "1px solid rgba(255,255,255,0.16)",
-                      color: i === 0 ? "#080E1C" : "#C7D2FE",
-                      fontSize: 8,
-                      fontWeight: 950,
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.22)",
-                    }}
-                  >
-                    {initials}
-                  </div>
-                ))}
-              </div>
-
-              <span style={{
-                color: "#94A3B8",
-                fontSize: 10,
-                fontWeight: 850,
-              }}>
-                7 membres
-              </span>
-            </div>
-          </div>
-        </button>
-
         {/* RouteBot sidebar button */}
         <button
           className="ecoroute-routebot-button"
@@ -1921,6 +1803,35 @@ export function App() {
             </h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveScreen("team");
+                setAlertsPopupOpen(false);
+              }}
+              style={{
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "0 12px",
+                borderRadius: 10,
+                border: activeScreen === "team"
+                  ? "1px solid rgba(110,231,183,0.35)"
+                  : "1px solid rgba(255,255,255,0.08)",
+                background: activeScreen === "team"
+                  ? "linear-gradient(135deg, rgba(110,231,183,0.16), rgba(129,140,248,0.10))"
+                  : "rgba(255,255,255,0.04)",
+                color: activeScreen === "team" ? "#BBF7D0" : "#94A3B8",
+                fontSize: 12,
+                fontWeight: 900,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <CheckCircle2 size={15} />
+              Équipe projet
+            </button>
 
             <div style={{ position: "relative" }}>
               <button
