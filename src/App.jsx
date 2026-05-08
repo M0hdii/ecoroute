@@ -1682,14 +1682,14 @@ export function App() {
             flexShrink: 0,
           }}>
             <div style={{
-            width: 46,
-            height: 46,
-            borderRadius: 14,
+            width: 54,
+            height: 54,
+            borderRadius: 16,
             overflow: "hidden",
             flexShrink: 0,
-            background: "rgba(15,23,42,0.60)",
-            border: "1px solid rgba(110,231,183,0.28)",
-            boxShadow: "0 12px 30px rgba(110,231,183,0.16)",
+            background: "rgba(15,23,42,0.65)",
+            border: "1px solid rgba(110,231,183,0.32)",
+            boxShadow: "0 14px 34px rgba(110,231,183,0.20)",
           }}>
             <img
               src={ECOROUTE_LOGO_SRC}
@@ -1702,6 +1702,7 @@ export function App() {
               }}
             />
           </div>
+        </div>
 
           <div style={{ minWidth: 0 }}>
             <div style={{
@@ -2749,18 +2750,25 @@ export function App() {
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
                 }}>
                   <div style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 17,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "linear-gradient(135deg, #818CF8, #6EE7B7)",
-                    color: "#080E1C",
+                    width: 64,
+                    height: 64,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    background: "rgba(15,23,42,0.65)",
+                    border: "1px solid rgba(110,231,183,0.32)",
+                    boxShadow: "0 16px 40px rgba(110,231,183,0.18)",
                     marginBottom: 16,
-                    boxShadow: "0 18px 44px rgba(129,140,248,0.26)",
                   }}>
-                    <Navigation size={23} />
+                    <img
+                      src={ECOROUTE_LOGO_SRC}
+                      alt="EcoRoute logo"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
                   </div>
 
                   <div style={{
