@@ -1236,6 +1236,25 @@ export function App() {
   const [optimizedDestinationCity, setOptimizedDestinationCity] = useState("");
   const [mode, setMode] = useState("ai");
   const [scenario, setScenario] = useState("normal");
+
+  const aiDetectedScenario =
+    weather?.condition?.toLowerCase?.().includes("pluie") || weather?.condition?.toLowerCase?.().includes("rain")
+      ? "Météo défavorable"
+      : alerts?.some?.((alert) => alert.level === "high" || alert.severity === "high")
+        ? "Incident détecté"
+        : trafficLevel === "dense" || trafficLevel === "élevé" || trafficLevel === "high"
+          ? "Congestion urbaine"
+          : "Conditions normales";
+
+  const aiScenarioDescription =
+    aiDetectedScenario === "Météo défavorable"
+      ? "L’IA détecte un risque météo et adapte la recommandation de trajet."
+      : aiDetectedScenario === "Incident détecté"
+        ? "L’IA détecte un incident actif et privilégie une trajectoire plus sûre."
+        : aiDetectedScenario === "Congestion urbaine"
+          ? "L’IA détecte une circulation chargée et évite les zones lentes."
+          : "L’IA ne détecte aucun risque majeur pour ce trajet.";
+
   const [loading, setLoading] = useState(false);
   const [hasRoute, setHasRoute] = useState(false);
   const [metrics, setMetrics] = useState(null);
@@ -1257,7 +1276,7 @@ export function App() {
     return () => clearInterval(id);
   }, []);
 
-  function simulateOptimize(nextMode = mode, nextScenario = scenario) {
+  function simulateOptimize(nextMode = mode, nextScenario = aiDetectedScenario) {
     if (!startCity || !destinationCity || startCity === destinationCity) return;
 
     setLoading(true);
@@ -1349,7 +1368,7 @@ export function App() {
     if (!startCity || !destinationCity || startCity === destinationCity) return;
 
     // Recalculate immediately when the user changes mode.
-    simulateOptimize(nextMode, scenario);
+    simulateOptimize(nextMode, aiDetectedScenario);
   }
 
 
@@ -2230,26 +2249,75 @@ export function App() {
                   </div>
 
                   <div style={{ marginBottom: 14 }}>
-                    <label style={{ display: "block", fontSize: 10, color: "#475569", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5 }}>Scénario opérationnel</label>
-                    <div style={{ position: "relative" }}>
-                      <select
-                        value={scenario}
-                        onChange={(e) => {
-                          const nextScenario = e.target.value;
-                          setScenario(nextScenario);
+                    <label style={{
+                      display: "block",
+                      fontSize: 10,
+                      color: "#475569",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.9,
+                      marginBottom: 7,
+                    }}>
+                      Situation détectée par l’IA
+                    </label>
 
-                          if (hasRoute && startCity !== destinationCity) {
-                            simulateOptimize(mode, nextScenario);
-                          } else {
-                            setHasRoute(false);
-                            setMetrics(null);
-                          }
-                        }}
-                        style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)", color: "#E2E8F0", borderRadius: 9, padding: "8px 28px 8px 10px", fontSize: 12, fontWeight: 600, outline: "none" }}
-                      >
-                        {Object.entries(scenarios).map(([k, s]) => <option key={k} value={k} style={{ color: "#0F172A", background: "#FFFFFF" }}>{s.label}</option>)}
-                      </select>
-                      <ChevronRight size={12} color="#475569" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%) rotate(90deg)", pointerEvents: "none" }} />
+                    <div style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      padding: "12px 13px",
+                      borderRadius: 14,
+                      background: "linear-gradient(135deg, rgba(34,211,238,0.10), rgba(110,231,183,0.07))",
+                      border: "1px solid rgba(110,231,183,0.22)",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                    }}>
+                      <div style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "rgba(110,231,183,0.13)",
+                        border: "1px solid rgba(110,231,183,0.24)",
+                        flexShrink: 0,
+                      }}>
+                        <Brain size={17} color="#6EE7B7" />
+                      </div>
+
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginBottom: 4,
+                        }}>
+                          <span style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: "50%",
+                            background: "#6EE7B7",
+                            boxShadow: "0 0 10px rgba(110,231,183,0.9)",
+                          }} />
+                          <strong style={{
+                            color: "#F8FAFC",
+                            fontSize: 13,
+                            fontWeight: 900,
+                          }}>
+                            {aiDetectedScenario}
+                          </strong>
+                        </div>
+
+                        <p style={{
+                          margin: 0,
+                          color: "#94A3B8",
+                          fontSize: 11.5,
+                          lineHeight: 1.45,
+                          fontWeight: 650,
+                        }}>
+                          {aiScenarioDescription}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
