@@ -1237,43 +1237,44 @@ export function App() {
   const [mode, setMode] = useState("ai");
   const [scenario, setScenario] = useState("normal");
 
-  const aiDetectedScenario =
-    scenario === "incident"
-      ? "Incident détecté"
-      : scenario === "traffic"
-        ? "Congestion urbaine"
-        : scenario === "weather"
-          ? "Météo défavorable"
-          : "Conditions normales";
-
-  const aiScenarioDescription =
-    aiDetectedScenario === "Incident détecté"
-      ? "L’IA détecte un incident actif via les alertes temps réel et adapte la trajectoire."
-      : aiDetectedScenario === "Congestion urbaine"
-        ? "L’IA détecte une circulation chargée et évite les zones lentes."
-        : aiDetectedScenario === "Météo défavorable"
-          ? "L’IA détecte un risque météo et ajuste la recommandation de trajet."
-          : "L’IA analyse les données temps réel et ne détecte aucun risque majeur.";
-
-  // Auto scenario detection: replaces the old manual dropdown.
-  useEffect(() => {
-    if (!startCity || !destinationCity) {
-      setScenario("normal");
-      return;
-    }
+  const detectedScenarioKey = (() => {
+    if (!startCity || !destinationCity) return "normal";
 
     const routeKey = `${startCity}-${destinationCity}`.toLowerCase();
 
     if (routeKey.includes("casablanca") || routeKey.includes("mohammedia")) {
-      setScenario("traffic");
-    } else if (routeKey.includes("tanger") || routeKey.includes("tetouan")) {
-      setScenario("weather");
-    } else if (routeKey.includes("marrakech") || routeKey.includes("agadir")) {
-      setScenario("incident");
-    } else {
-      setScenario("normal");
+      return "traffic";
     }
-  }, [startCity, destinationCity]);
+
+    if (routeKey.includes("tanger") || routeKey.includes("tetouan")) {
+      return "weather";
+    }
+
+    if (routeKey.includes("marrakech") || routeKey.includes("agadir")) {
+      return "incident";
+    }
+
+    return "normal";
+  })();
+
+  const aiDetectedScenario =
+    detectedScenarioKey === "incident"
+      ? "Incident détecté"
+      : detectedScenarioKey === "traffic"
+        ? "Congestion urbaine"
+        : detectedScenarioKey === "weather"
+          ? "Météo défavorable"
+          : "Conditions normales";
+
+  const aiScenarioDescription =
+    detectedScenarioKey === "incident"
+      ? "L’IA détecte un incident actif via les alertes temps réel et adapte la trajectoire."
+      : detectedScenarioKey === "traffic"
+        ? "L’IA détecte une circulation chargée et évite les zones lentes."
+        : detectedScenarioKey === "weather"
+          ? "L’IA détecte un risque météo et ajuste la recommandation de trajet."
+          : "L’IA analyse les données temps réel et ne détecte aucun risque majeur.";
+
 
   const [loading, setLoading] = useState(false);
   const [hasRoute, setHasRoute] = useState(false);
@@ -1296,7 +1297,7 @@ export function App() {
     return () => clearInterval(id);
   }, []);
 
-  function simulateOptimize(nextMode = mode, nextScenario = scenario) {
+  function simulateOptimize(nextMode = mode, nextScenario = detectedScenarioKey || scenario) {
     if (!startCity || !destinationCity || startCity === destinationCity) return;
 
     setLoading(true);
@@ -1388,7 +1389,7 @@ export function App() {
     if (!startCity || !destinationCity || startCity === destinationCity) return;
 
     // Recalculate immediately when the user changes mode.
-    simulateOptimize(nextMode, scenario);
+    simulateOptimize(nextMode, detectedScenarioKey || scenario);
   }
 
 
@@ -2180,6 +2181,8 @@ export function App() {
                             setStartCity(value);
                             setHasRoute(false);
                             setMetrics(null);
+                            setFollowVehicle(false);
+                            setFollowVehicle(false);
 
                             if (value === destinationCity) {
                               setDestinationCity("");
@@ -2324,7 +2327,7 @@ export function App() {
                             fontSize: 13,
                             fontWeight: 900,
                           }}>
-                            {aiDetectedScenario}
+                            {aiDetectedScenario || "Conditions normales"}
                           </strong>
                         </div>
 
@@ -2335,7 +2338,7 @@ export function App() {
                           lineHeight: 1.45,
                           fontWeight: 650,
                         }}>
-                          {aiScenarioDescription}
+                          {aiScenarioDescription || "L’IA analyse les données temps réel."}
                         </p>
                       </div>
                     </div>
