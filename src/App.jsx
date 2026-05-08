@@ -1662,8 +1662,8 @@ export function App() {
         <div className="ecoroute-brand" style={{
           display: "flex",
           alignItems: "center",
-          gap: 11,
-          padding: "0 8px 20px",
+          gap: 12,
+          padding: "2px 4px 0 4px",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
           marginBottom: 16,
           position: "relative",
@@ -1682,27 +1682,48 @@ export function App() {
             flexShrink: 0,
           }}>
             <div style={{
-            width: 64,
-            height: 64,
-            borderRadius: 18,
-            overflow: "hidden",
-            flexShrink: 0,
-            background: "radial-gradient(circle at 50% 45%, rgba(110,231,183,0.22), rgba(15,23,42,0.72) 62%, rgba(2,6,23,0.95))",
-            border: "1px solid rgba(110,231,183,0.48)",
-            boxShadow: "0 0 0 4px rgba(110,231,183,0.08), 0 16px 42px rgba(34,211,238,0.28)",
-            padding: 3,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            minWidth: 0,
+            paddingTop: 1,
           }}>
-            <img
-              src={ECOROUTE_LOGO_SRC}
-              alt="EcoRoute logo"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                display: "block",
-                filter: "brightness(1.18) contrast(1.12) saturate(1.16)",
-              }}
-            />
+            <div style={{
+              color: "#F8FAFC",
+              fontSize: 17,
+              fontWeight: 950,
+              lineHeight: 1,
+              letterSpacing: "-0.35px",
+              marginBottom: 7,
+            }}>
+              EcoRoute
+            </div>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "8px 1fr",
+              columnGap: 8,
+              alignItems: "start",
+            }}>
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#6EE7B7",
+                boxShadow: "0 0 12px rgba(110,231,183,0.85)",
+                marginTop: 4,
+              }} />
+              <div style={{
+                color: "#D7E4F6",
+                fontSize: 12,
+                fontWeight: 900,
+                lineHeight: 1.22,
+                letterSpacing: "0.15px",
+              }}>
+                <div>Trace ta route.</div>
+                <div>Livre mieux.</div>
+              </div>
+            </div>
           </div>
         </div>
 
