@@ -1,13 +1,270 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+
+  --color-bg: #05070d;
+  --color-surface: #0b1120;
+  --color-surface-2: #0f172a;
+  --color-border: rgba(148, 163, 184, 0.12);
+  --color-border-strong: rgba(148, 163, 184, 0.22);
+
+  --color-ink-100: #f1f5f9;
+  --color-ink-200: #cbd5e1;
+  --color-ink-300: #94a3b8;
+  --color-ink-400: #64748b;
+  --color-ink-500: #475569;
+
+  --color-brand: #6ee7b7;
+  --color-brand-strong: #34d399;
+  --color-accent: #818cf8;
+  --color-warn: #fbbf24;
+  --color-danger: #f87171;
+  --color-info: #22d3ee;
+}
 
 html,
 body,
 #root {
+  height: 100%;
   margin: 0;
+  background: radial-gradient(
+      1200px 600px at 85% -10%,
+      rgba(129, 140, 248, 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 600px at -10% 110%,
+      rgba(110, 231, 183, 0.06),
+      transparent 55%
+    ),
+    #05070d;
+  color: #e2e8f0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.32);
+}
+
+/* --- Leaflet dark-tinted tiles --- */
+.eco-map .leaflet-tile {
+  filter: grayscale(0.15) invert(0.85) brightness(0.9) contrast(1.08)
+    hue-rotate(158deg) saturate(1.1);
+}
+.eco-map.leaflet-container {
+  background: #0b1220 !important;
+  font-family: var(--font-sans);
+}
+.eco-map .leaflet-control-attribution {
+  background: rgba(11, 18, 32, 0.8) !important;
+  color: #94a3b8 !important;
+  font-size: 10px;
+  border-radius: 8px 0 0 0;
+}
+.eco-map .leaflet-control-zoom a {
+  background: rgba(15, 23, 42, 0.92) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+.eco-map .leaflet-popup-content-wrapper,
+.eco-map .leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.96);
+  color: #f8fafc;
+  border: 1px solid rgba(129, 140, 248, 0.24);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Custom utilities --- */
+.surface {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.72) 0%,
+    rgba(11, 17, 32, 0.72) 100%
+  );
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(10px) saturate(1.1);
+}
+.surface-strong {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.92) 0%,
+    rgba(11, 17, 32, 0.92) 100%
+  );
+  border: 1px solid var(--color-border-strong);
+  backdrop-filter: blur(10px) saturate(1.1);
+}
+
+.hair-top {
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.24),
+    transparent
+  );
+  height: 1px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  transition: transform 120ms ease, background 160ms ease, border 160ms ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-primary {
+  background: linear-gradient(135deg, #34d399 0%, #22d3ee 100%);
+  color: #041814;
+  box-shadow: 0 10px 30px -10px rgba(52, 211, 153, 0.55);
+}
+.btn-primary:hover {
+  filter: brightness(1.06);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.25);
+}
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--color-border);
+  color: #e2e8f0;
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--color-border-strong);
+}
+
+.input,
+.select {
   width: 100%;
-  min-height: 100%;
-  background: #020617;
-  font-family: Inter, sans-serif;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 13px;
+  padding: 10px 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border 140ms ease, box-shadow 140ms ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.input:focus,
+.select:focus {
+  border-color: rgba(129, 140, 248, 0.45);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.12);
+}
+.select {
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 30px;
+}
+.select option {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* --- Animations --- */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes route-dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.anim-slide-up {
+  animation: slide-up 280ms ease both;
+}
+.anim-fade-in {
+  animation: fade-in 240ms ease both;
+}
+.anim-pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+.route-line-animated {
+  stroke-dasharray: 8 6;
+  animation: route-dash 1.6s linear infinite;
 }
