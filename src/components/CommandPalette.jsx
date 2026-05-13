@@ -151,7 +151,7 @@ export default function CommandPalette({
   });
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[10vh] px-4 animate-fade-in">
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-[10vh] px-4 animate-fade-in">
       <div
         className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
         onClick={onClose}

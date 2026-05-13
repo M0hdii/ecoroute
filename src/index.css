@@ -429,3 +429,47 @@ select option {
 .animate-float-y {
   animation: float-y 4s ease-in-out infinite;
 }
+
+
+/* ---------- Map stacking fix ----------
+   Leaflet creates panes with high z-index values. Without forcing a local
+   stacking context, the map can visually pass over modals such as search
+   and alerts. Keep all map internals below app overlays. */
+.ecoroute-map {
+  position: relative !important;
+  z-index: 0 !important;
+  isolation: isolate !important;
+}
+
+.ecoroute-map .leaflet-pane {
+  z-index: 1 !important;
+}
+
+.ecoroute-map .leaflet-tile-pane {
+  z-index: 1 !important;
+}
+
+.ecoroute-map .leaflet-overlay-pane {
+  z-index: 2 !important;
+}
+
+.ecoroute-map .leaflet-shadow-pane {
+  z-index: 3 !important;
+}
+
+.ecoroute-map .leaflet-marker-pane {
+  z-index: 4 !important;
+}
+
+.ecoroute-map .leaflet-tooltip-pane {
+  z-index: 5 !important;
+}
+
+.ecoroute-map .leaflet-popup-pane {
+  z-index: 6 !important;
+}
+
+.ecoroute-map .leaflet-control-container {
+  position: relative;
+  z-index: 7 !important;
+}

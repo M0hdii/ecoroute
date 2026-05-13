@@ -10,7 +10,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { ArrowRight, Crosshair } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cities, cityCoords } from "../../lib/constants";
 import { getCityCoords } from "../../lib/helpers";
 
@@ -208,7 +208,7 @@ function useTruckProgress(active, routePoints, startProgress = 0.35, zoom = MORO
   useEffect(() => {
     if (!active || !routePoints?.length) return undefined;
 
-    const baseSpeedPerMs = 0.000010;
+    const baseSpeedPerMs = 0.000024;
     const baseZoom = 8;
     const endProgress = 0.94;
 
@@ -412,7 +412,7 @@ export default function RealMap({
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-2xl"
+      className="relative z-0 isolate w-full overflow-hidden rounded-2xl"
       style={{ height }}
     >
       <MapContainer
@@ -623,7 +623,7 @@ export default function RealMap({
       </MapContainer>
 
       {/* OVERLAY CARDS */}
-      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none z-[500]">
+      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none z-[20]">
         <div className="card-glass-strong pointer-events-auto flex items-center gap-3 px-3 py-2">
           <div className="flex items-center gap-2">
             <span
@@ -692,22 +692,6 @@ export default function RealMap({
         ) : null}
       </div>
 
-      {/* Empty state */}
-      {!canShowRoute ? (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center card-glass-strong px-6 py-5">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl eco-gradient-bg text-ink-950 mb-3">
-              <Crosshair size={20} strokeWidth={2.4} />
-            </div>
-            <div className="font-display font-bold text-sm">
-              Choisissez un trajet pour voir la carte
-            </div>
-            <div className="text-xs text-white/50 mt-1">
-              Départ + destination, puis calcul de l'itinéraire.
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
