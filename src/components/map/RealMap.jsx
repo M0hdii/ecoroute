@@ -358,7 +358,9 @@ export default function RealMap({
         }
       } catch (err) {
         if (cancelled || err?.name === "AbortError") return;
-        setRoutePoints(fallbackPolyline(orderedCoords));
+        console.warn("OSRM route unavailable:", err);
+        setRoutePoints([]);
+        setRouteSource("OSRM indisponible");
       }
     }
 
@@ -406,7 +408,7 @@ export default function RealMap({
     toCity || "",
     waypointKey || "",
     hasRoute ? "route" : "selection",
-    incidentReroute ? "incident" : "normal",
+    "pure-osrm",
   ].join("|");
 
   // All cities as quiet background markers
@@ -529,52 +531,17 @@ export default function RealMap({
                 lineCap: "round",
               }}
             />
-            {/* main line */}
-            {incidentIndex > 0 ? (
-              <>
-                <Polyline
-                  positions={routeBefore}
-                  pathOptions={{
-                    color: routeVisual.main,
-                    weight: 5.5,
-                    opacity: 1,
-                    lineCap: "round",
-                  }}
-                />
-                <Polyline
-                  positions={blockedBranch}
-                  pathOptions={{
-                    color: "#fb7185",
-                    weight: 3,
-                    opacity: 0.6,
-                    dashArray: "6 8",
-                    lineCap: "round",
-                  }}
-                />
-                <Polyline
-                  positions={routeAfter}
-                  pathOptions={{
-                    color: "#a3e635",
-                    weight: 5.5,
-                    opacity: 1,
-                    dashArray: "14 10",
-                    lineCap: "round",
-                    className: "route-animate-dash",
-                  }}
-                />
-              </>
-            ) : (
-              <Polyline
-                positions={routePoints}
-                pathOptions={{
-                  color: routeVisual.main,
-                  weight: 5.5,
-                  opacity: 1,
-                  lineCap: "round",
-                  className: "route-animate-dash",
-                }}
-              />
-            )}
+            {/* main line: always pure OSRM geometry, no local visual reroute */}
+            <Polyline
+              positions={routePoints}
+              pathOptions={{
+                color: routeVisual.main,
+                weight: 5.5,
+                opacity: 1,
+                lineCap: "round",
+                className: "route-animate-dash",
+              }}
+            />
 
             {/* Incident marker */}
             {incidentPt ? (
