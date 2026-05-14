@@ -1,12 +1,11 @@
 import Groq from "groq-sdk";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(200).json({
+      ok: true,
+      message: "EcoRoute AI route decision API is running. Use POST to test AI.",
+    });
   }
 
   try {
@@ -33,11 +32,15 @@ export default async function handler(req, res) {
         reason:
           "GROQ_API_KEY est absente sur Vercel. EcoRoute utilise le calcul local.",
         advice: [
-          "Ajoutez GROQ_API_KEY dans les variables d’environnement Vercel.",
-          "Redéployez le projet après l’ajout de la clé.",
+          "Ajoutez GROQ_API_KEY dans Vercel.",
+          "Redéployez le projet après avoir ajouté la clé.",
         ],
       });
     }
+
+    const groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
@@ -75,9 +78,16 @@ Réponds uniquement en JSON valide.
     });
 
     const content = completion.choices?.[0]?.message?.content || "{}";
-    const ai = JSON.parse(content);
+
+    let ai;
+    try {
+      ai = JSON.parse(content);
+    } catch {
+      ai = {};
+    }
 
     const inputStops = new Set(waypoints);
+
     const cleanedOrder = Array.isArray(ai.optimizedStopOrder)
       ? ai.optimizedStopOrder.filter((city) => inputStops.has(city))
       : waypoints;
@@ -107,9 +117,17 @@ Réponds uniquement en JSON valide.
   } catch (error) {
     console.error("AI route decision error:", error);
 
-    return res.status(500).json({
-      error: "AI route decision failed.",
-      detail: error.message,
+    return res.status(200).json({
+      source: "fallback",
+      recommendedMode: req.body?.mode || "ai",
+      optimizedStopOrder: req.body?.waypoints || [],
+      riskLevel: req.body?.scenarioKey === "normal" ? "Faible" : "Moyen",
+      reason:
+        "La décision IA Groq est indisponible pour le moment. EcoRoute utilise le calcul local.",
+      advice: [
+        "Vérifiez GROQ_API_KEY dans Vercel.",
+        "Consultez les logs Vercel pour voir l’erreur exacte.",
+      ],
     });
   }
 }
