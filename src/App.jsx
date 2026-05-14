@@ -87,6 +87,7 @@ export default function App() {
         const nextMetrics = computeMetrics({
           startCity,
           destinationCity,
+          waypoints,
           mode: nextMode,
           scenarioKey: detectedScenarioKey,
         });
@@ -97,7 +98,7 @@ export default function App() {
         setLoading(false);
       }, 650);
     },
-    [startCity, destinationCity, mode, detectedScenarioKey]
+    [startCity, destinationCity, waypoints, mode, detectedScenarioKey]
   );
 
   function handleModeChange(nextMode) {
@@ -109,10 +110,12 @@ export default function App() {
 
   function addWaypoint(cityKey) {
     setWaypoints((wps) => (wps.includes(cityKey) ? wps : [...wps, cityKey]));
+    clearCurrentRoute();
   }
 
   function removeWaypoint(idx) {
     setWaypoints((wps) => wps.filter((_, i) => i !== idx));
+    clearCurrentRoute();
   }
 
   function handleSaveRoute() {

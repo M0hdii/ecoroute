@@ -16,12 +16,25 @@ export function haversineKm(a, b) {
  * Simulate route-level metrics.
  * Keeps parity with the previous prototype but extracted from the UI layer.
  */
-export function computeMetrics({ startCity, destinationCity, mode, scenarioKey }) {
-  const from = getCityCoords(startCity);
-  const to = getCityCoords(destinationCity);
-  if (!from || !to) return null;
+export function computeMetrics({
+  startCity,
+  destinationCity,
+  waypoints = [],
+  mode,
+  scenarioKey,
+}) {
+  const orderedCities = [startCity, ...(waypoints || []), destinationCity].filter(Boolean);
+  if (orderedCities.length < 2) return null;
 
-  const baseRoadDistance = Math.max(35, Math.round(haversineKm(from, to) * 1.28));
+  const orderedCoords = orderedCities.map((city) => getCityCoords(city));
+  if (orderedCoords.some((coords) => !coords)) return null;
+
+  const totalAirDistance = orderedCoords.reduce((sum, coords, index) => {
+    if (index === 0) return sum;
+    return sum + haversineKm(orderedCoords[index - 1], coords);
+  }, 0);
+
+  const baseRoadDistance = Math.max(35, Math.round(totalAirDistance * 1.28));
 
   const distance =
     mode === "classic"
@@ -41,14 +54,17 @@ export function computeMetrics({ startCity, destinationCity, mode, scenarioKey }
           ? 0.12
           : 0;
 
+  // Extra stops add handling / unloading time, so the duration changes too.
+  const stopHandlingHours = Math.max(0, waypoints.length) * 0.18;
   const baseTime = distance / averageSpeed;
-  const estimatedTime = (baseTime * (1 + scenarioDelay)).toFixed(1);
+  const estimatedTime = (baseTime * (1 + scenarioDelay) + stopHandlingHours).toFixed(1);
 
   const fuelRate = mode === "classic" ? 0.135 : mode === "eco" ? 0.092 : 0.112;
   const fuelLiters = Math.round(distance * fuelRate);
   const co2Kg = Math.round(fuelLiters * 2.45);
 
   const costRate = mode === "classic" ? 3.45 : mode === "eco" ? 2.75 : 3.1;
+  const stopServiceCost = Math.max(0, waypoints.length) * 45;
 
   const riskLevel =
     scenarioKey === "rain" || scenarioKey === "weather" || scenarioKey === "incident"
@@ -62,7 +78,7 @@ export function computeMetrics({ startCity, destinationCity, mode, scenarioKey }
     estimatedTimeHours: estimatedTime,
     fuelLiters,
     co2Kg,
-    estimatedCostMAD: Math.round(distance * costRate),
+    estimatedCostMAD: Math.round(distance * costRate + stopServiceCost),
     riskLevel,
   };
 }

@@ -334,8 +334,8 @@ export default function RealMap({
         setRoutePoints([]);
         return;
       }
-      // Show a visible route immediately, then replace it with OSRM geometry when available.
-      setRoutePoints(fallbackPolyline(orderedCoords));
+      // Wait for OSRM road geometry first. Do not show a temporary direct line.
+      setRoutePoints([]);
       try {
         const coordString = orderedCoords
           .map((coords) => `${coords[1]},${coords[0]}`)
