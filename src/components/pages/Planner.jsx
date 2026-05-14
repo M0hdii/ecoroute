@@ -39,6 +39,7 @@ export default function Planner({
   detectedScenarioKey,
   hasRoute,
   metrics,
+  aiRouteDecision,
   loading,
   onOptimize,
   optimizedStartCity,

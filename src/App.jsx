@@ -31,6 +31,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [hasRoute, setHasRoute] = useState(false);
   const [metrics, setMetrics] = useState(null);
+  const [aiRouteDecision, setAiRouteDecision] = useState(null);
+  const [lastAiPayload, setLastAiPayload] = useState(null);
   const [savedSignal, setSavedSignal] = useState(0);
 
   // ---------- UI chrome ----------
@@ -79,24 +81,77 @@ export default function App() {
   const detectedScenarioKey = detectScenario(startCity, destinationCity);
 
   const simulateOptimize = useCallback(
-    (nextMode = mode) => {
+    async (nextMode = mode) => {
       if (!startCity || !destinationCity || startCity === destinationCity)
         return;
+
       setLoading(true);
-      setTimeout(() => {
+
+      try {
+        let finalMode = nextMode;
+        let finalWaypoints = waypoints;
+        let decision = null;
+
+        try {
+          const aiPayload = {
+            startCity,
+            destinationCity,
+            waypoints,
+            mode: nextMode,
+            scenarioKey: detectedScenarioKey,
+          };
+
+          console.log("Route envoyée à l'IA :", aiPayload);
+          setLastAiPayload(aiPayload);
+
+          const response = await fetch("http://localhost:5000/api/ai-route-decision", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(aiPayload),
+          });
+
+          if (response.ok) {
+            decision = await response.json();
+            if (Array.isArray(decision.optimizedStopOrder)) {
+              finalWaypoints = decision.optimizedStopOrder;
+            }
+            if (decision.recommendedMode) {
+              finalMode = decision.recommendedMode;
+              setMode(decision.recommendedMode);
+            }
+            setAiRouteDecision(decision);
+          }
+        } catch (aiError) {
+          console.warn("AI route decision unavailable, using local logic.", aiError);
+          setAiRouteDecision({
+            source: "local",
+            recommendedMode: nextMode,
+            optimizedStopOrder: waypoints,
+            riskLevel: detectedScenarioKey === "normal" ? "Faible" : "Moyen",
+            reason: "Décision IA indisponible : calcul local utilisé.",
+            advice: ["Vérifier le serveur IA ou la clé GROQ_API_KEY."],
+          });
+        }
+
         const nextMetrics = computeMetrics({
           startCity,
           destinationCity,
-          waypoints,
-          mode: nextMode,
+          waypoints: finalWaypoints,
+          mode: finalMode,
           scenarioKey: detectedScenarioKey,
         });
+
+        if (finalWaypoints.join("|") !== waypoints.join("|")) {
+          setWaypoints(finalWaypoints);
+        }
+
         setMetrics(nextMetrics);
         setOptimizedStartCity(startCity);
         setOptimizedDestinationCity(destinationCity);
         setHasRoute(true);
+      } finally {
         setLoading(false);
-      }, 650);
+      }
     },
     [startCity, destinationCity, waypoints, mode, detectedScenarioKey]
   );
@@ -197,6 +252,8 @@ export default function App() {
             detectedScenarioKey={detectedScenarioKey}
             hasRoute={hasRoute}
             metrics={metrics}
+            aiRouteDecision={aiRouteDecision}
+            lastAiPayload={lastAiPayload}
             loading={loading}
             onOptimize={() => simulateOptimize(mode)}
             optimizedStartCity={optimizedStartCity}

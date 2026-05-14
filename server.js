@@ -373,6 +373,131 @@ Réponds de manière humaine, concrète et contextualisée.
     res.status(500).json({ error: "Assistant failed" });
   }
 });
+
+// AI route decision layer: Groq chooses the best stop order and mode.
+// OSRM / RealMap still draws the real road geometry afterwards.
+app.post("/api/ai-route-decision", async (req, res) => {
+  try {
+    const {
+      startCity,
+      destinationCity,
+      waypoints = [],
+      mode = "ai",
+      scenarioKey = "normal",
+      availableModes = ["ai", "eco", "classic"],
+    } = req.body || {};
+
+    if (!startCity || !destinationCity) {
+      return res.status(400).json({
+        error: "startCity and destinationCity are required.",
+      });
+    }
+
+    // If no API key is configured, return a deterministic fallback so the app still works.
+    if (!process.env.GROQ_API_KEY) {
+      return res.json({
+        source: "fallback",
+        recommendedMode: mode,
+        optimizedStopOrder: waypoints,
+        riskLevel: scenarioKey === "normal" ? "Faible" : "Moyen",
+        reason:
+          "Clé GROQ_API_KEY absente : EcoRoute utilise l’ordre choisi localement.",
+        advice: [
+          "Ajoutez GROQ_API_KEY pour activer la décision IA réelle.",
+          "Le tracé routier reste calculé par le moteur cartographique.",
+        ],
+      });
+    }
+
+    const systemPrompt = `
+Tu es RouteBot, une couche IA de décision logistique pour EcoRoute au Maroc.
+Ton rôle est de choisir le meilleur ordre des arrêts et le mode d’optimisation.
+Tu ne dois pas inventer une géométrie routière. Le tracé réel sera généré ensuite par OSRM.
+Réponds uniquement en JSON valide, sans markdown.
+`;
+
+    const userPrompt = {
+      startCity,
+      destinationCity,
+      waypoints,
+      currentMode: mode,
+      scenarioKey,
+      availableModes,
+      instructions: {
+        recommendedMode: "Choisir entre ai, eco, classic.",
+        optimizedStopOrder:
+          "Retourner uniquement les mêmes arrêts fournis, réordonnés si nécessaire. Ne jamais ajouter de ville.",
+        riskLevel: "Choisir entre Faible, Moyen, Élevé.",
+        reason: "Expliquer brièvement en français.",
+        advice: "Liste de 2 à 4 conseils courts en français.",
+      },
+      outputShape: {
+        recommendedMode: "ai",
+        optimizedStopOrder: waypoints,
+        riskLevel: "Faible",
+        reason: "string",
+        advice: ["string"],
+      },
+    };
+
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.2,
+      max_tokens: 700,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: JSON.stringify(userPrompt) },
+      ],
+    });
+
+    const content = completion.choices?.[0]?.message?.content || "{}";
+    let ai = JSON.parse(content);
+
+    const inputStops = new Set(waypoints);
+    const cleanedOrder = Array.isArray(ai.optimizedStopOrder)
+      ? ai.optimizedStopOrder.filter((city) => inputStops.has(city))
+      : waypoints;
+
+    // Safety: if AI dropped stops, keep the original order.
+    const finalOrder =
+      cleanedOrder.length === waypoints.length ? cleanedOrder : waypoints;
+
+    const validModes = new Set(availableModes);
+    const finalMode = validModes.has(ai.recommendedMode)
+      ? ai.recommendedMode
+      : mode;
+
+    const validRisks = new Set(["Faible", "Moyen", "Élevé"]);
+    const finalRisk = validRisks.has(ai.riskLevel)
+      ? ai.riskLevel
+      : scenarioKey === "normal"
+        ? "Faible"
+        : "Moyen";
+
+    return res.json({
+      source: "groq",
+      recommendedMode: finalMode,
+      optimizedStopOrder: finalOrder,
+      riskLevel: finalRisk,
+      reason:
+        typeof ai.reason === "string"
+          ? ai.reason
+          : "L’IA recommande cet ordre pour réduire les détours et améliorer l’efficacité.",
+      advice: Array.isArray(ai.advice)
+        ? ai.advice.slice(0, 4).map(String)
+        : ["Vérifier le trafic avant le départ.", "Surveiller l’ETA pendant la tournée."],
+    });
+  } catch (error) {
+    console.error("AI route decision error:", error);
+    return res.status(500).json({
+      error: "AI route decision failed.",
+      detail: error.message,
+    });
+  }
+});
+
+
 app.listen(5000, () => {
   console.log("EcoRoute AI backend running on http://localhost:5000");
 });
