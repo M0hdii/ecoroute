@@ -293,6 +293,7 @@ export default function RealMap({
   ].filter(Boolean);
   const canShowRoute = Boolean(hasRoute && fromCoords && toCoords && fullRouteCoords.length >= 2);
   const [routePoints, setRoutePoints] = useState([]);
+  const [routeSource, setRouteSource] = useState("none");
 
   // Visual palette per mode
   const routeVisual = useMemo(() => {
@@ -334,13 +335,14 @@ export default function RealMap({
         setRoutePoints([]);
         return;
       }
-      // Wait for OSRM road geometry first. Do not show a temporary direct line.
+      // Use OSRM only so localhost and Vercel draw the same road route.
       setRoutePoints([]);
+      setRouteSource("loading");
       try {
         const coordString = orderedCoords
           .map((coords) => `${coords[1]},${coords[0]}`)
           .join(";");
-        const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson`;
+        const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?alternatives=false&steps=false&overview=full&geometries=geojson`;
         const res = await fetch(url, { signal: controller.signal });
         const data = await res.json();
         if (cancelled) return;
@@ -350,7 +352,10 @@ export default function RealMap({
           lat,
           lng,
         ]);
-        if (!cancelled) setRoutePoints(points);
+        if (!cancelled) {
+          setRoutePoints(points);
+          setRouteSource("OSRM");
+        }
       } catch (err) {
         if (cancelled || err?.name === "AbortError") return;
         setRoutePoints(fallbackPolyline(orderedCoords));
@@ -692,6 +697,10 @@ export default function RealMap({
         ) : null}
       </div>
 
+
+      <div className="absolute bottom-3 left-3 z-[20] rounded-xl border border-white/10 bg-black/55 px-3 py-1.5 text-[11px] font-mono text-white/70 backdrop-blur">
+        Route source : {routeSource}
+      </div>
     </div>
   );
 }
