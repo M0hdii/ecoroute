@@ -532,6 +532,14 @@ export default function RealMap({
               }}
             />
             {/* main line: always pure OSRM geometry, no local visual reroute */}
+            {/*
+              dashArray is set directly on pathOptions so the SVG path always
+              renders with the same dashed pattern in dev and prod. Relying on
+              the CSS class alone was unreliable because Leaflet applies
+              className via setStyle after the path is created, which can
+              skip the class on some renders. The class is kept for the
+              optional flow animation only.
+            */}
             <Polyline
               positions={routePoints}
               pathOptions={{
@@ -539,6 +547,7 @@ export default function RealMap({
                 weight: 5.5,
                 opacity: 1,
                 lineCap: "round",
+                dashArray: "10 14",
                 className: "route-animate-dash",
               }}
             />

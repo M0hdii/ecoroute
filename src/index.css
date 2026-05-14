@@ -365,7 +365,12 @@ select option {
 }
 
 .route-animate-dash {
-  stroke-dasharray: 10 14;
+  /*
+    stroke-dasharray is also set inline via Leaflet pathOptions so the dashes
+    show even if this rule is missing or overridden in production. Keep it
+    here too as a fallback and so the animation has a known dash length.
+  */
+  stroke-dasharray: 10 14 !important;
   animation: routeDash 2s linear infinite;
 }
 
