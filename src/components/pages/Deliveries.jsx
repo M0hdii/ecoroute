@@ -75,7 +75,12 @@ function deliveryForVehicle(vehicle, index) {
       ...linked,
       vehicleId: vehicle.id,
       city: vehicle.to && vehicle.to !== "—" ? vehicle.to : vehicle.from,
-      window: linked.window || (vehicle.eta ? `ETA ${vehicle.eta}` : "—"),
+      arrivalWindow: vehicle.status === "idle" ? null : linked.arrivalWindow || vehicle.arrivalWindow || null,
+      startedAt: vehicle.status === "idle" ? null : linked.startedAt || vehicle.startedAt || null,
+      window:
+        vehicle.status === "idle"
+          ? "En attente"
+          : linked.window || (vehicle.eta ? `ETA ${vehicle.eta}` : "—"),
       status: linked.status || vehicleStatusInfo(vehicle.status).label,
       incident: linked.incident || vehicle.incident || false,
     };
@@ -91,6 +96,8 @@ function deliveryForVehicle(vehicle, index) {
           : `Tournée ${vehicle.id}`,
     city: vehicle.to && vehicle.to !== "—" ? vehicle.to : vehicle.from,
     window: vehicle.status === "idle" ? "En attente" : vehicle.eta ? `ETA ${vehicle.eta}` : "—",
+    arrivalWindow: vehicle.status === "idle" ? null : vehicle.arrivalWindow || null,
+    startedAt: vehicle.status === "idle" ? null : vehicle.startedAt || null,
     priority: vehicle.incident ? "Haute" : vehicle.status === "en_route" ? "Haute" : vehicle.status === "loading" ? "Moyenne" : "Normale",
     status: vehicle.incident ? "Incident · en route" : vehicleStatusInfo(vehicle.status).label,
     vehicleId: vehicle.id,
@@ -227,10 +234,20 @@ export default function Deliveries({ selectedDelivery, onSelectDelivery }) {
                           <MapPin size={11} />
                           {vehicleRouteLabel(vehicle)}
                         </span>
+                        {d.startedAt ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-300/90">
+                            Début : {d.startedAt}
+                          </span>
+                        ) : null}
                         <span className="inline-flex items-center gap-1">
                           <Clock size={11} />
-                          {d.window}
+                          {vehicle.status === "idle" ? "En attente" : vehicle.eta ? `ETA ${vehicle.eta}` : "—"}
                         </span>
+                        {vehicle.status !== "idle" && (d.arrivalWindow || vehicle.arrivalWindow) ? (
+                          <span className="inline-flex items-center gap-1">
+                            Fenêtre : {d.arrivalWindow || vehicle.arrivalWindow}
+                          </span>
+                        ) : null}
                       </div>
 
                       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -325,6 +342,12 @@ export default function Deliveries({ selectedDelivery, onSelectDelivery }) {
                     {selectedVehicle?.incident ? "Incident en route" : vehicleStatusInfo(selectedVehicle?.status).label}
                   </Badge>
                   <Badge color="slate">ETA {selectedVehicle?.eta || "—"}</Badge>
+                  {selectedVehicle?.status !== "idle" ? (
+                    <Badge color="emerald">Fenêtre {selectedVehicle?.arrivalWindow || selectedRow?.delivery?.arrivalWindow || "12:00–14:00"}</Badge>
+                  ) : null}
+                  {selectedRow?.delivery?.startedAt || selectedVehicle?.startedAt ? (
+                    <Badge color="emerald">Début {selectedRow?.delivery?.startedAt || selectedVehicle?.startedAt}</Badge>
+                  ) : null}
                   <Badge color="slate">Charge {selectedVehicle?.load ?? 0}%</Badge>
                   <Badge color="slate">Carburant {selectedVehicle?.fuel ?? 0}%</Badge>
                 </div>

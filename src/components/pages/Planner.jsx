@@ -292,24 +292,7 @@ export default function Planner({
         {/* ------------ RIGHT PANEL ------------ */}
         <div className="xl:col-span-8 space-y-5">
           <Card className="p-2 overflow-hidden">
-                      {lastAiPayload ? (
-            <Card className="p-4 border border-olive-400/20 bg-olive-400/[0.05]">
-              <div className="flex items-center gap-2 text-olive-300">
-                <Sparkles size={14} strokeWidth={2.2} />
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em]">
-                  Route envoyée à l'IA
-                </span>
-              </div>
-              <div className="mt-2 text-[12px] font-mono text-slate-400">
-                IA analyse : {[lastAiPayload.startCity, ...(lastAiPayload.waypoints || []), lastAiPayload.destinationCity].filter(Boolean).join(" → ")}
-              </div>
-              <div className="mt-1 text-[11px] font-mono text-slate-500">
-                Mode : {lastAiPayload.mode} · Scénario : {lastAiPayload.scenarioKey}
-              </div>
-            </Card>
-          ) : null}
-
-<RealMap
+            <RealMap
               fromCity={optimizedStartCity || startCity}
               toCity={optimizedDestinationCity || destinationCity}
               waypointCities={waypoints}

@@ -46,7 +46,7 @@ export function getDeliveryEtaUpdate(delivery) {
   return {
     oldEta: "13:05",
     newEta: "13:19",
-    delayMinutes: 14,
+    delayMinutes: 29,
     windowEnd: "14:00",
     marginMinutes: 41,
     status: "Dans la fenêtre",

@@ -289,8 +289,11 @@ select option {
 }
 
 @keyframes routeDash {
+  from {
+    stroke-dashoffset: 0;
+  }
   to {
-    stroke-dashoffset: -60;
+    stroke-dashoffset: -24;
   }
 }
 
@@ -371,7 +374,7 @@ select option {
     here too as a fallback and so the animation has a known dash length.
   */
   stroke-dasharray: 10 14 !important;
-  animation: routeDash 2s linear infinite;
+  animation: routeDash 2.4s linear infinite;
 }
 
 /* ---------- Input primitives ---------- */

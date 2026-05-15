@@ -262,6 +262,50 @@ function TruckLayer({ active, routePoints, startProgress }) {
 const EMPTY_WAYPOINTS = [];
 const EMPTY_MARKERS = [];
 
+function buildDetourPoint(fromPoint, toPoint) {
+  if (!fromPoint || !toPoint) return null;
+
+  const [fromLat, fromLng] = fromPoint;
+  const [toLat, toLng] = toPoint;
+
+  const midLat = (fromLat + toLat) / 2;
+  const midLng = (fromLng + toLng) / 2;
+
+  const dLat = toLat - fromLat;
+  const dLng = toLng - fromLng;
+  const length = Math.sqrt(dLat * dLat + dLng * dLng) || 1;
+
+  // Perpendicular offset. Minimum offset keeps short city routes visibly rerouted.
+  const offset = Math.max(0.035, Math.min(0.12, length * 0.45));
+  const perpLat = -dLng / length;
+  const perpLng = dLat / length;
+
+  return [midLat + perpLat * offset, midLng + perpLng * offset];
+}
+
+async function fetchOsrmRoute(points, signal) {
+  const coordString = points
+    .map(([lat, lng]) => `${lng},${lat}`)
+    .join(";");
+
+  const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?alternatives=false&steps=false&overview=full&geometries=geojson`;
+  const response = await fetch(url, { signal });
+
+  if (!response.ok) {
+    throw new Error("OSRM reroute unavailable");
+  }
+
+  const data = await response.json();
+  const coords = data.routes?.[0]?.geometry?.coordinates;
+
+  if (!coords?.length) {
+    throw new Error("OSRM reroute returned no geometry");
+  }
+
+  return coords.map(([lng, lat]) => [lat, lng]);
+}
+
+
 /* ---------- Main component ---------- */
 export default function RealMap({
   fromCity,
@@ -293,6 +337,7 @@ export default function RealMap({
   ].filter(Boolean);
   const canShowRoute = Boolean(hasRoute && fromCoords && toCoords && fullRouteCoords.length >= 2);
   const [routePoints, setRoutePoints] = useState([]);
+  const [alternativeRoutePoints, setAlternativeRoutePoints] = useState([]);
   const [routeSource, setRouteSource] = useState("none");
 
   // Visual palette per mode
@@ -342,7 +387,7 @@ export default function RealMap({
         const coordString = orderedCoords
           .map((coords) => `${coords[1]},${coords[0]}`)
           .join(";");
-        const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?alternatives=false&steps=false&overview=full&geometries=geojson`;
+        const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?alternatives=${incidentReroute ? "true" : "false"}&steps=false&overview=full&geometries=geojson`;
         const res = await fetch(url, { signal: controller.signal });
         const data = await res.json();
         if (cancelled) return;
@@ -352,14 +397,45 @@ export default function RealMap({
           lat,
           lng,
         ]);
+
+        let alternativePoints =
+          incidentReroute && data.routes?.[1]?.geometry?.coordinates?.length
+            ? data.routes[1].geometry.coordinates.map(([lng, lat]) => [lat, lng])
+            : [];
+
+        // OSRM often returns no alternative on short urban routes.
+        // In that case, force a real recalculated route via a detour point and ask OSRM again.
+        if (incidentReroute && !alternativePoints.length && points.length > 4) {
+          try {
+            const incidentIdx = Math.max(1, Math.floor(points.length * 0.52));
+            const incidentPoint = points[incidentIdx];
+            const destinationPoint = orderedCoords[orderedCoords.length - 1];
+            const detourPoint = buildDetourPoint(incidentPoint, destinationPoint);
+
+            if (detourPoint) {
+              alternativePoints = await fetchOsrmRoute(
+                [incidentPoint, detourPoint, destinationPoint],
+                controller.signal
+              );
+            }
+          } catch (rerouteError) {
+            console.warn("Forced incident reroute unavailable:", rerouteError);
+            alternativePoints = [];
+          }
+        }
+
         if (!cancelled) {
           setRoutePoints(points);
-          setRouteSource("OSRM");
+          setAlternativeRoutePoints(alternativePoints);
+          setRouteSource(
+            alternativePoints.length ? "OSRM + reroute incident" : "OSRM"
+          );
         }
       } catch (err) {
         if (cancelled || err?.name === "AbortError") return;
         console.warn("OSRM route unavailable:", err);
         setRoutePoints([]);
+        setAlternativeRoutePoints([]);
         setRouteSource("OSRM indisponible");
       }
     }
@@ -370,7 +446,7 @@ export default function RealMap({
       controller.abort();
       clearTimeout(t);
     };
-  }, [fromCity, toCity, waypointKey, hasRoute]);
+  }, [fromCity, toCity, waypointKey, hasRoute, incidentReroute]);
 
   const incidentIndex =
     incidentReroute && routePoints.length > 4
@@ -379,19 +455,22 @@ export default function RealMap({
 
   const routeBefore =
     incidentIndex > 0 ? routePoints.slice(0, incidentIndex + 1) : routePoints;
-  const routeAfter =
-    incidentIndex > 0 ? routePoints.slice(incidentIndex) : [];
-  const blockedBranch =
-    incidentIndex > 0
-      ? routePoints.slice(incidentIndex).map(([lat, lng], i, seg) => {
-          if (i === 0) return [lat, lng];
-          const p = i / Math.max(1, seg.length - 1);
-          const wave = Math.sin(p * Math.PI);
-          return [lat + wave * 0.008, lng + wave * 0.006];
-        })
-      : [];
 
-  const incidentPt = incidentIndex > 0 ? routePoints[incidentIndex] : null;
+  // Real incident alternative: OSRM route alternative if available.
+  // If OSRM returns no alternative, we keep the original route and only show the incident marker.
+  const hasRealAlternative = incidentIndex > 0 && alternativeRoutePoints.length > 1;
+  const routeAfter = hasRealAlternative ? alternativeRoutePoints : [];
+  const blockedBranch = incidentIndex > 0 ? routePoints.slice(incidentIndex) : [];
+
+  const incidentPt =
+    incidentIndex > 0 && blockedBranch.length > 1
+      ? blockedBranch[
+          Math.min(
+            Math.floor(blockedBranch.length * 0.28),
+            blockedBranch.length - 1
+          )
+        ]
+      : null;
   const fitPoints =
     routePoints.length > 1
       ? [
@@ -408,7 +487,7 @@ export default function RealMap({
     toCity || "",
     waypointKey || "",
     hasRoute ? "route" : "selection",
-    "pure-osrm",
+    incidentReroute ? "incident" : "normal",
   ].join("|");
 
   // All cities as quiet background markers
@@ -531,26 +610,58 @@ export default function RealMap({
                 lineCap: "round",
               }}
             />
-            {/* main line: always pure OSRM geometry, no local visual reroute */}
-            {/*
-              dashArray is set directly on pathOptions so the SVG path always
-              renders with the same dashed pattern in dev and prod. Relying on
-              the CSS class alone was unreliable because Leaflet applies
-              className via setStyle after the path is created, which can
-              skip the class on some renders. The class is kept for the
-              optional flow animation only.
-            */}
-            <Polyline
-              positions={routePoints}
-              pathOptions={{
-                color: routeVisual.main,
-                weight: 5.5,
-                opacity: 1,
-                lineCap: "round",
-                dashArray: "10 14",
-                className: "route-animate-dash",
-              }}
-            />
+            {/* main line */}
+            {incidentIndex > 0 ? (
+              <>
+                <Polyline
+                  positions={routeBefore}
+                  pathOptions={{
+                    color: routeVisual.main,
+                    weight: 5.5,
+                    opacity: 1,
+                    lineCap: "round",
+                    dashArray: "18 18",
+                    className: "route-animate-dash",
+                  }}
+                />
+                <Polyline
+                  positions={blockedBranch}
+                  pathOptions={{
+                    color: "#fb7185",
+                    weight: 4,
+                    opacity: hasRealAlternative ? 0.72 : 0.45,
+                    dashArray: "10 14",
+                    lineCap: "round",
+                    className: "route-animate-dash",
+                  }}
+                />
+                {hasRealAlternative ? (
+                  <Polyline
+                    positions={routeAfter}
+                    pathOptions={{
+                      color: "#a3e635",
+                      weight: 5.5,
+                      opacity: 1,
+                      dashArray: "18 18",
+                      lineCap: "round",
+                      className: "route-animate-dash",
+                    }}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <Polyline
+                positions={routePoints}
+                pathOptions={{
+                  color: routeVisual.main,
+                  weight: 5.5,
+                  opacity: 1,
+                  lineCap: "round",
+                  dashArray: "18 18",
+                  className: "route-animate-dash",
+                }}
+              />
+            )}
 
             {/* Incident marker */}
             {incidentPt ? (
@@ -668,15 +779,9 @@ export default function RealMap({
               className="w-2 h-2 rounded-full bg-coral-400"
               style={{ boxShadow: "0 0 8px #fb7185" }}
             />
-            Incident · recalcul IA · ETA 13:19
+            Incident · recalcul IA · ETA 13:34
           </div>
         ) : null}
-      </div>
-
-
-      <div className="absolute bottom-3 left-3 z-[20] rounded-xl border border-white/10 bg-black/55 px-3 py-1.5 text-[11px] font-mono text-white/70 backdrop-blur">
-        Route source : {routeSource}
-      </div>
-    </div>
+      </div>    </div>
   );
 }
