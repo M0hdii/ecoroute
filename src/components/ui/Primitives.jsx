@@ -1,4 +1,70 @@
+import { useEffect, useRef, useState } from "react";
 
+/* ---------- Animated counter ---------- */
+// Smoothly tweens from 0 to the numeric value when the component mounts
+// (and re-tweens whenever the target changes). Non-numeric values fall
+// back to plain text. Used by StatTile so KPIs feel "alive".
+export function CountUp({
+  value,
+  durationMs = 900,
+  decimals = null,
+  className = "",
+}) {
+  const numeric = typeof value === "number" ? value : Number(value);
+  const isNumeric = Number.isFinite(numeric);
+
+  // Auto-detect decimals from the source if not specified.
+  const autoDecimals =
+    decimals != null
+      ? decimals
+      : isNumeric && String(value).includes(".")
+        ? Math.min(2, String(value).split(".")[1]?.length || 0)
+        : 0;
+
+  const [display, setDisplay] = useState(isNumeric ? 0 : value);
+  const fromRef = useRef(0);
+  const startRef = useRef(null);
+  const rafRef = useRef(null);
+
+  useEffect(() => {
+    if (!isNumeric) {
+      setDisplay(value);
+      return undefined;
+    }
+
+    fromRef.current = typeof display === "number" ? display : 0;
+    startRef.current = null;
+
+    function tick(now) {
+      if (startRef.current == null) startRef.current = now;
+      const elapsed = now - startRef.current;
+      const t = Math.min(1, elapsed / durationMs);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      const next = fromRef.current + (numeric - fromRef.current) * eased;
+
+      setDisplay(t === 1 ? numeric : next);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numeric, durationMs, isNumeric]);
+
+  if (!isNumeric) {
+    return <span className={className}>{value}</span>;
+  }
+
+  const formatted =
+    autoDecimals > 0
+      ? Number(display).toFixed(autoDecimals)
+      : Math.round(display).toLocaleString("fr-FR");
+
+  return <span className={`tabular-nums ${className}`}>{formatted}</span>;
+}
 
 /* ---------- Button ---------- */
 export function Button({
@@ -120,7 +186,7 @@ export function StatTile({
             compact ? "text-2xl" : "text-3xl"
           }`}
         >
-          {value}
+          <CountUp value={value} />
         </span>
         {suffix ? (
           <span className="text-xs text-white/50 font-semibold">{suffix}</span>

@@ -17,7 +17,7 @@ export default function RouteBotPanel({
   const [messages, setMessages] = useState([
     {
       role: "ai",
-      text: "Salut, je suis l’IA. Je vais t'aider comme un assistant d'exploitation : départ, priorité client, risque de retard, coût, carburant et CO₂. Choisis une question fréquente ou écris-moi directement.",
+      text: "Salut, c'est RouteBot. Je t'aide comme un dispatcher : départ, priorité client, risque de retard, coût, carburant et CO₂. Choisis une question fréquente ou écris-moi directement.",
     },
   ]);
   const [input, setInput] = useState("");

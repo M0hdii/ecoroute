@@ -23,6 +23,8 @@ import {
   deliveryStops,
 } from "../../lib/constants";
 import { Card, Badge, StatTile, StatusPill } from "../ui/Primitives";
+import DailyBriefing from "../DailyBriefing";
+import { useT } from "../../lib/i18n";
 
 const accentMap = {
   eco: "#8aaa7a",
@@ -31,45 +33,49 @@ const accentMap = {
   clay: "#cf6a4f",
 };
 
-export default function Overview({ onNavigate, onLoadSaved }) {
-const activeTrucks = fleetVehicles.filter((t) => t.status === "en_route").length;
+export default function Overview({ onNavigate, onLoadSaved, onOpenBot }) {
+  const t = useT();
+  const activeTrucks = fleetVehicles.filter((t) => t.status === "en_route").length;
   const totalKm = fleetVehicles.reduce((acc, t) => acc + t.kmToday, 0);
   const highAlerts = realtimeAlerts.filter((a) => a.level === "Élevé").length;
 
   return (
     <div className="p-5 md:p-8 space-y-5">
+      {/* ------- ROW 0 — Daily AI briefing ------- */}
+      <DailyBriefing onOpenBot={onOpenBot} />
+
       {/* ------- ROW 1 — KPIs ------- */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatTile
           icon={Truck}
-          label="Camions en route"
+          label={t("ov.kpi.trucks")}
           value={activeTrucks}
           suffix={`/${fleetVehicles.length}`}
           accent="#8aaa7a"
-          change="tous dans la fenêtre"
+          change={t("ov.kpi.trucks.sub")}
         />
         <StatTile
           icon={Route}
-          label="Km parcourus aujourd'hui"
+          label={t("ov.kpi.km")}
           value={totalKm}
           suffix="km"
           accent="#c9a96a"
-          change="+18% vs hier"
+          change={t("ov.kpi.km.sub")}
         />
         <StatTile
           icon={TrendingDown}
-          label="CO₂ économisé (7j)"
-          value="142"
+          label={t("ov.kpi.co2")}
+          value={142}
           suffix="kg"
           accent="#6a9fb5"
-          change="-23% vs baseline"
+          change={t("ov.kpi.co2.sub")}
         />
         <StatTile
           icon={ShieldAlert}
-          label="Alertes actives"
+          label={t("ov.kpi.alerts")}
           value={highAlerts}
           accent="#cf6a4f"
-          change="2 haute priorité"
+          change={t("ov.kpi.alerts.sub")}
         />
       </div>
 
@@ -77,9 +83,9 @@ const activeTrucks = fleetVehicles.filter((t) => t.status === "en_route").length
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="eyebrow text-slate-400">Météo flotte</div>
+            <div className="eyebrow text-slate-400">{t("ov.weather.eyebrow")}</div>
             <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1">
-              Conditions actuelles
+              {t("ov.weather.title")}
             </h3>
           </div>
           <Badge color="sky" icon={Cloud}>
@@ -119,9 +125,9 @@ const activeTrucks = fleetVehicles.filter((t) => t.status === "en_route").length
         <Card className="xl:col-span-5 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="eyebrow text-olive-300">Activité récente</div>
+              <div className="eyebrow text-olive-300">{t("ov.activity.eyebrow")}</div>
               <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1 inline-flex items-center gap-2">
-                Fil d'opérations
+                {t("ov.activity.title")}
                 <Activity size={16} strokeWidth={2} className="text-slate-400" />
               </h3>
             </div>
@@ -172,16 +178,16 @@ const activeTrucks = fleetVehicles.filter((t) => t.status === "en_route").length
         <Card className="xl:col-span-4 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="eyebrow text-slate-400">Flotte</div>
+              <div className="eyebrow text-slate-400">{t("ov.fleet.eyebrow")}</div>
               <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1">
-                Camions en route
+                {t("ov.fleet.title")}
               </h3>
             </div>
             <button
               onClick={() => onNavigate?.("fleet")}
               className="inline-flex items-center gap-1 text-[12px] text-olive-300 hover:text-olive-200 transition"
             >
-              Voir tout
+              {t("ov.fleet.viewall")}
               <ArrowRight size={12} strokeWidth={2} />
             </button>
           </div>
@@ -221,10 +227,10 @@ const activeTrucks = fleetVehicles.filter((t) => t.status === "en_route").length
         {/* Side column : today's deliveries */}
         <div className="xl:col-span-3">
           <Card className="p-5 min-h-[360px] flex flex-col">
-            <div className="eyebrow text-slate-400">Livraisons du jour</div>
+            <div className="eyebrow text-slate-400">{t("ov.deliveries.eyebrow")}</div>
             <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1 inline-flex items-center gap-2">
               <Package size={15} strokeWidth={2} className="text-slate-400" />
-              {deliveryStops.length} arrêts
+              {deliveryStops.length} {t("ov.deliveries.title")}
             </h3>
 
             <div className="mt-5 space-y-3 flex-1">
@@ -252,7 +258,7 @@ const activeTrucks = fleetVehicles.filter((t) => t.status === "en_route").length
               onClick={() => onNavigate?.("deliveries")}
               className="w-full mt-4 text-[12px] text-olive-300 hover:text-olive-200 transition inline-flex items-center justify-center gap-1"
             >
-              Voir toutes les livraisons
+              {t("ov.deliveries.viewall")}
               <ArrowRight size={12} strokeWidth={2} />
             </button>
           </Card>

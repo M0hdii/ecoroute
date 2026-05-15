@@ -104,7 +104,12 @@ export default function App() {
           console.log("Route envoyée à l'IA :", aiPayload);
           setLastAiPayload(aiPayload);
 
-          const response = await fetch("/api/ai-route-decision", {
+          const AI_ENDPOINT =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000/api/ai-route-decision"
+    : "/api/ai-route-decision";
+
+const response = await fetch(AI_ENDPOINT, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(aiPayload),
@@ -112,19 +117,33 @@ export default function App() {
 
           if (response.ok) {
             decision = await response.json();
-            if (Array.isArray(decision.optimizedStopOrder)) {
+            if (
+              Array.isArray(decision.optimizedStopOrder) &&
+              decision.optimizedStopOrder.length === waypoints.length
+            ) {
               finalWaypoints = decision.optimizedStopOrder;
             }
-            if (decision.recommendedMode) {
-              finalMode = decision.recommendedMode;
-              setMode(decision.recommendedMode);
+            // In "AI" mode, let Groq pick the best mode (eco / classic / ai).
+            // If the user explicitly chose Éco or Rapide, that choice always wins.
+            const groqMode = decision.recommendedMode;
+            const groqModeIsValid = ["ai", "eco", "classic"].includes(groqMode);
+            if (nextMode === "ai" && groqModeIsValid) {
+              finalMode = groqMode;
+            } else {
+              finalMode = nextMode;
             }
-            setAiRouteDecision(decision);
+            setAiRouteDecision({
+              ...decision,
+              selectedMode: finalMode,
+              userMode: nextMode,
+              recommendedMode: groqMode || nextMode,
+            });
           }
         } catch (aiError) {
           console.warn("AI route decision unavailable, using local logic.", aiError);
           setAiRouteDecision({
             source: "local",
+            selectedMode: nextMode,
             recommendedMode: nextMode,
             optimizedStopOrder: waypoints,
             riskLevel: detectedScenarioKey === "normal" ? "Faible" : "Moyen",
@@ -158,9 +177,35 @@ export default function App() {
 
   function handleModeChange(nextMode) {
     setMode(nextMode);
-    if (hasRoute && startCity && destinationCity) {
-      simulateOptimize(nextMode);
-    }
+    if (!hasRoute || !startCity || !destinationCity) return;
+
+    // Mode switch should be instant: keep the same geometry, just recompute metrics.
+    // Re-running the full pipeline (AI + OSRM) used to flash the polyline empty.
+    // When the user picks "AI", reapply Groq's stored recommendation if we have one.
+    const groqMode = aiRouteDecision?.recommendedMode;
+    const groqModeIsValid = ["ai", "eco", "classic"].includes(groqMode);
+    const effectiveMode =
+      nextMode === "ai" && groqModeIsValid ? groqMode : nextMode;
+
+    const nextMetrics = computeMetrics({
+      startCity,
+      destinationCity,
+      waypoints,
+      mode: effectiveMode,
+      scenarioKey: detectedScenarioKey,
+    });
+    setMetrics(nextMetrics);
+
+    // Keep the AI decision card in sync with the user override.
+    setAiRouteDecision((prev) =>
+      prev
+        ? {
+            ...prev,
+            userMode: nextMode,
+            selectedMode: effectiveMode,
+          }
+        : prev
+    );
   }
 
   function addWaypoint(cityKey) {
@@ -170,6 +215,18 @@ export default function App() {
 
   function removeWaypoint(idx) {
     setWaypoints((wps) => wps.filter((_, i) => i !== idx));
+    clearCurrentRoute();
+  }
+
+  function reorderWaypoints(fromIdx, toIdx) {
+    setWaypoints((wps) => {
+      if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0) return wps;
+      if (fromIdx >= wps.length || toIdx >= wps.length) return wps;
+      const next = [...wps];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      return next;
+    });
     clearCurrentRoute();
   }
 
@@ -235,6 +292,7 @@ export default function App() {
           <Overview
             onNavigate={setActiveScreen}
             onLoadSaved={handleLoadSaved}
+            onOpenBot={() => setBotOpen(true)}
           />
         ) : null}
 
@@ -247,6 +305,7 @@ export default function App() {
             waypoints={waypoints}
             addWaypoint={addWaypoint}
             removeWaypoint={removeWaypoint}
+            reorderWaypoints={reorderWaypoints}
             mode={mode}
             onModeChange={handleModeChange}
             detectedScenarioKey={detectedScenarioKey}

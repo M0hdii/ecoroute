@@ -1,304 +1,583 @@
+import { useMemo, useState } from "react";
 import {
   TrendingDown,
   Fuel,
   Coins,
-  Award,
-  Gauge,
   BarChart3,
-  Leaf,
+  Gauge,
   Trees,
   Calendar,
+  Sparkles,
+  Truck,
+  CheckCircle2,
+  Brain,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
-import { useState } from "react";
-import {
-  weekHistory,
-  modeUsage,
-} from "../../lib/constants";
-import { Card, Badge, StatTile, HBar } from "../ui/Primitives";
-import { AreaChart, BarChart, Donut } from "../ui/Charts";
+import { weekHistory, modeUsage, fleetVehicles } from "../../lib/constants";
 import { computeSavings } from "../../lib/routeMath";
+import { Card, Badge, HBar } from "../ui/Primitives";
+import { DualMetricChart, Heatmap, RadialProgress, Sparkline } from "../ui/Charts";
+import { useT } from "../../lib/i18n";
+
+// Brand-tuned palette so charts feel cohesive with the rest of the app.
+const PALETTE = {
+  co2: "#34d399",
+  cost: "#fbbf24",
+  deliveries: "#38bdf8",
+  km: "#a3e635",
+  fleet: "#a78bfa",
+  ontime: "#34d399",
+  fuel: "#fb7185",
+  ai: "#a3e635",
+};
 
 export default function Analytics({ metrics }) {
+  const t = useT();
   const [range, setRange] = useState("7d");
   const savings = computeSavings(metrics);
 
-  const costPerDeliveryData = weekHistory.map((d) => ({
-    ...d,
-    costPerDelivery: Math.round(d.cost / Math.max(1, d.deliveries)),
-  }));
+  const totals = useMemo(() => {
+    const co2 = weekHistory.reduce((s, d) => s + d.co2, 0);
+    const cost = weekHistory.reduce((s, d) => s + d.cost, 0);
+    const deliveries = weekHistory.reduce((s, d) => s + d.deliveries, 0);
+    const km = weekHistory.reduce((s, d) => s + d.km, 0);
+    return { co2, cost, deliveries, km };
+  }, []);
 
-  const bestEfficiencyDay = costPerDeliveryData.reduce((best, current) =>
-    current.costPerDelivery < best.costPerDelivery ? current : best
+  const costPerDelivery = useMemo(
+    () =>
+      weekHistory.map((d) => ({
+        ...d,
+        ratio: Math.round(d.cost / Math.max(1, d.deliveries)),
+      })),
+    []
   );
 
-  const totalCo2 = weekHistory.reduce((a, d) => a + d.co2, 0);
-  const totalDeliveries = weekHistory.reduce((a, d) => a + d.deliveries, 0);
-  const totalCost = weekHistory.reduce((a, d) => a + d.cost, 0);
-  const totalKm = weekHistory.reduce((a, d) => a + d.km, 0);
+  const bestDay = costPerDelivery.reduce((b, c) =>
+    c.ratio < b.ratio ? c : b
+  );
+  const worstDay = costPerDelivery.reduce((w, c) =>
+    c.ratio > w.ratio ? c : w
+  );
+
+  // Series for sparklines (one tiny chart per KPI tile).
+  const co2Series = weekHistory.map((d) => d.co2);
+  const costSeries = weekHistory.map((d) => d.cost);
+  const delvSeries = weekHistory.map((d) => d.deliveries);
+  const kmSeries = weekHistory.map((d) => d.km);
+
+  // Fake operational gauges driven from current data.
+  const fleetUtilization = Math.round(
+    (fleetVehicles.filter((v) => v.status !== "idle").length /
+      fleetVehicles.length) *
+      100
+  );
+  const onTime = 96;
+  const fuelScore = 78;
+  const aiAdoption = modeUsage.find((m) => m.label === "IA optimisée")?.value || 58;
 
   return (
     <div className="p-5 md:p-8 space-y-5">
-      {/* HERO */}
-      <Card variant="hero" className="relative overflow-hidden p-7 md:p-8">
-        <div className="absolute inset-0 grid-pattern opacity-40" />
+      {/* ============== HERO ============== */}
+      <Card variant="eco" className="relative overflow-hidden p-6 md:p-7">
         <div
-          className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl"
-          style={{ background: "rgba(138,170,122,0.3)" }}
+          className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-40"
+          style={{ background: "rgba(163,230,53,0.30)" }}
         />
-        <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+        <div
+          className="absolute -bottom-24 -left-12 w-72 h-72 rounded-full blur-3xl opacity-25"
+          style={{ background: "rgba(56,189,248,0.18)" }}
+        />
+        <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-5">
           <div>
-            <Badge color="olive">Analytique · 7 jours</Badge>
-            <h2 className="mt-3 font-display font-semibold text-4xl md:text-[46px] tracking-[-0.025em] leading-[1.04] text-slate-50">
-              Mesurer l'impact,
+            <Badge color="lime" icon={Sparkles}>
+              {t("an.eyebrow")}
+            </Badge>
+            <h2 className="mt-3 font-display font-bold text-3xl md:text-4xl tracking-tight leading-[1.1]">
+              {t("an.title.1")}
               <br />
               <span className="italic font-normal eco-gradient-text">
-                piloter la décision.
+                {t("an.title.2")}
               </span>
             </h2>
-            <p className="mt-3 text-slate-300 text-[13px] max-w-xl leading-relaxed">
-              Vue complète de la performance : CO₂, coût, carburant,
-              livraisons, utilisation des modes.
+            <p className="mt-3 text-white/65 text-sm max-w-xl leading-relaxed">
+              {t("an.subtitle")}
             </p>
           </div>
-          <div className="flex items-center gap-2 p-1 rounded-lg bg-white/[0.04] border border-white/8">
-            {["7d", "30d", "90d"].map((r) => (
+
+          <div
+            className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/10 shrink-0"
+            role="group"
+          >
+            {[
+              { key: "7d", label: t("an.range.7d") },
+              { key: "30d", label: t("an.range.30d") },
+              { key: "90d", label: t("an.range.90d") },
+            ].map((r) => (
               <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-3 py-1.5 rounded-md text-[11.5px] font-mono uppercase tracking-wider transition ${
-                  range === r
-                    ? "bg-olive-400/20 text-olive-200"
-                    : "text-slate-400 hover:text-slate-50"
+                key={r.key}
+                onClick={() => setRange(r.key)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition ${
+                  range === r.key
+                    ? "bg-eco-400/20 text-eco-300 border border-eco-300/40"
+                    : "text-white/55 hover:text-white border border-transparent"
                 }`}
               >
-                {r}
+                {r.label}
               </button>
             ))}
           </div>
         </div>
       </Card>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatTile
+      {/* ============== KPI RIBBON with sparklines ============== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
           icon={TrendingDown}
-          label="CO₂ total"
-          value={totalCo2}
+          label={t("an.kpi.co2")}
+          value={totals.co2}
           suffix="kg"
-          accent="#8aaa7a"
-          change="-23% vs semaine dernière"
-          changeDirection="down"
+          accent={PALETTE.co2}
+          delta={{ direction: "down", text: t("an.kpi.co2.sub") }}
+          series={co2Series}
         />
-        <StatTile
+        <KpiCard
           icon={Coins}
-          label="Coût total"
-          value={totalCost.toLocaleString()}
+          label={t("an.kpi.cost")}
+          value={totals.cost}
           suffix="MAD"
-          accent="#c9a96a"
-          change="-18% grâce à l'IA"
-          changeDirection="down"
+          accent={PALETTE.cost}
+          delta={{ direction: "down", text: t("an.kpi.cost.sub") }}
+          series={costSeries}
         />
-        <StatTile
+        <KpiCard
           icon={BarChart3}
-          label="Livraisons"
-          value={totalDeliveries}
-          accent="#6a9fb5"
-          change="+12% vs période"
-          changeDirection="up"
+          label={t("an.kpi.deliveries")}
+          value={totals.deliveries}
+          accent={PALETTE.deliveries}
+          delta={{ direction: "up", text: t("an.kpi.deliveries.sub") }}
+          series={delvSeries}
         />
-        <StatTile
+        <KpiCard
           icon={Gauge}
-          label="Km parcourus"
-          value={totalKm.toLocaleString()}
+          label={t("an.kpi.km")}
+          value={totals.km}
           suffix="km"
-          accent="#b9c9a4"
-          change="rendement 82%"
+          accent={PALETTE.km}
+          delta={{ direction: "up", text: t("an.kpi.km.sub") }}
+          series={kmSeries}
         />
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <Card className="xl:col-span-8 p-5">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <div className="eyebrow text-olive-300">— Tendance CO₂</div>
-              <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1">
-                Émissions quotidiennes
-              </h3>
+      {/* ============== DUAL TREND CHART ============== */}
+      <Card className="p-5">
+        <div className="flex items-start justify-between mb-4 gap-3">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-eco-300">
+              {t("an.trend.title")}
             </div>
-            <div className="text-[11px] font-mono text-slate-400 inline-flex items-center gap-2">
-              <Calendar size={11} strokeWidth={2} />
-              <span>7 derniers jours</span>
-            </div>
+            <h3 className="mt-0.5 font-display font-bold text-xl tracking-tight">
+              {t("an.trend.subtitle")}
+            </h3>
           </div>
-          <AreaChart
-            data={weekHistory}
-            valueKey="co2"
-            labelKey="day"
-            color="#8aaa7a"
-            height={200}
-            suffix=" kg"
-            showPoints={true}
+          <div className="text-[11px] font-mono text-white/45 inline-flex items-center gap-1.5 shrink-0">
+            <Calendar size={11} />
+            {t("an.range.7d")}
+          </div>
+        </div>
+        <DualMetricChart
+          data={weekHistory}
+          primaryKey="co2"
+          secondaryKey="cost"
+          labelKey="day"
+          primaryColor={PALETTE.co2}
+          secondaryColor={PALETTE.cost}
+          primaryLabel="CO₂"
+          secondaryLabel="MAD"
+          primarySuffix=" kg"
+          secondarySuffix=""
+          height={250}
+        />
+      </Card>
+
+      {/* ============== HEATMAP + EFFICIENCY split ============== */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <Card className="xl:col-span-7 p-5 flex flex-col">
+          <div className="mb-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-sky-accent">
+              {t("an.heatmap.title")}
+            </div>
+            <h3 className="mt-0.5 font-display font-bold text-lg tracking-tight">
+              {t("an.heatmap.label")}
+            </h3>
+            <p className="mt-1 text-[12px] text-white/55">
+              {t("an.heatmap.subtitle")}
+            </p>
+          </div>
+          <div className="flex-1 flex items-stretch">
+            <Heatmap
+              data={weekHistory.map((d) => ({ label: d.day, value: d.deliveries }))}
+              valueKey="value"
+              labelKey="label"
+              color={PALETTE.deliveries}
+              cellHeight={120}
             />
+          </div>
         </Card>
 
-        <Card className="xl:col-span-4 p-5">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <div className="eyebrow text-copper-400">— Modes</div>
-              <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1">
-                Utilisation
-              </h3>
+        <Card className="xl:col-span-5 p-5">
+          <div className="mb-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-lime-bright">
+              {t("an.eff.eyebrow")}
             </div>
+            <h3 className="mt-0.5 font-display font-bold text-lg tracking-tight">
+              {t("an.eff.title")}
+            </h3>
           </div>
-          <div className="flex items-center justify-center py-4">
-            <Donut
-              data={modeUsage}
-              centerValue="58%"
-              centerLabel="IA optimisée"
+          <div className="space-y-2.5">
+            {costPerDelivery.map((d) => {
+              const max = Math.max(...costPerDelivery.map((x) => x.ratio));
+              const isBest = d.day === bestDay.day;
+              const isWorst = d.day === worstDay.day;
+              const color = isBest ? PALETTE.co2 : isWorst ? PALETTE.fuel : "#94a3b8";
+              return (
+                <HBar
+                  key={d.day}
+                  label={d.day}
+                  sub={`${d.ratio} MAD`}
+                  value={d.ratio}
+                  max={max}
+                  color={color}
+                />
+              );
+            })}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Mini
+              label={t("an.eff.best")}
+              value={`${bestDay.day} · ${bestDay.ratio} MAD`}
+              color={PALETTE.co2}
+              icon={CheckCircle2}
+            />
+            <Mini
+              label={t("an.eff.worst")}
+              value={`${worstDay.day} · ${worstDay.ratio} MAD`}
+              color={PALETTE.fuel}
+              icon={ArrowUpRight}
             />
           </div>
-          <div className="space-y-2 mt-2">
+        </Card>
+      </div>
+
+      {/* ============== GAUGES + MODE BREAKDOWN ============== */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <Card className="xl:col-span-7 p-5">
+          <div className="mb-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-eco-300">
+              {t("an.gauges.eyebrow")}
+            </div>
+            <h3 className="mt-0.5 font-display font-bold text-lg tracking-tight">
+              {t("an.gauges.title")}
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Gauge3
+              icon={Truck}
+              label={t("an.gauges.fleet")}
+              value={fleetUtilization}
+              color={PALETTE.fleet}
+            />
+            <Gauge3
+              icon={CheckCircle2}
+              label={t("an.gauges.ontime")}
+              value={onTime}
+              color={PALETTE.ontime}
+            />
+            <Gauge3
+              icon={Fuel}
+              label={t("an.gauges.fuel")}
+              value={fuelScore}
+              color={PALETTE.fuel}
+            />
+            <Gauge3
+              icon={Brain}
+              label={t("an.gauges.ai")}
+              value={aiAdoption}
+              color={PALETTE.ai}
+            />
+          </div>
+        </Card>
+
+        <Card className="xl:col-span-5 p-5">
+          <div className="mb-4">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-lime-bright">
+              {t("an.modes.title")}
+            </div>
+            <h3 className="mt-0.5 font-display font-bold text-lg tracking-tight">
+              {t("an.modes.subtitle")}
+            </h3>
+          </div>
+          <div className="space-y-3">
             {modeUsage.map((m) => (
-              <div key={m.label} className="flex items-center gap-2">
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ background: m.color }}
-                />
-                <span className="text-[12.5px] text-slate-200 flex-1">
-                  {m.label}
-                </span>
-                <span className="text-[12.5px] font-mono text-slate-400 tabular">
-                  {m.value}%
-                </span>
+              <div key={m.label}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="inline-flex items-center gap-2 text-[12.5px] text-white/80 font-semibold">
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        background: m.color,
+                        boxShadow: `0 0 8px ${m.color}`,
+                      }}
+                    />
+                    {m.label}
+                  </span>
+                  <span
+                    className="text-[12px] font-mono font-bold tabular-nums"
+                    style={{ color: m.color }}
+                  >
+                    {m.value}%
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-white/[0.05] overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-700"
+                    style={{
+                      width: `${m.value}%`,
+                      background: `linear-gradient(90deg, ${m.color}, ${m.color}90)`,
+                      boxShadow: `0 0 10px ${m.color}80`,
+                    }}
+                  />
+                </div>
               </div>
             ))}
           </div>
         </Card>
       </div>
 
-      {/* Efficiency chart */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="eyebrow text-olive-300">— Efficacité opérationnelle</div>
-            <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1">
-              Coût moyen par livraison
-            </h3>
-            <p className="mt-1 text-[12px] text-slate-400">
-              Plus le coût par livraison est bas, plus la tournée est efficace.
-            </p>
-          </div>
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-olive-300">
-            <span className="w-2 h-2 rounded-full bg-olive-300" />
-            MAD / livraison
-          </span>
-        </div>
-
-        <BarChart
-          data={costPerDeliveryData}
-          keys={["costPerDelivery"]}
-          colors={["#8aaa7a"]}
-          labelKey="day"
-          height={220}
-        />
-
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-[12px]">
-          <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3">
-            <div className="text-slate-400">Meilleur jour</div>
-            <div className="mt-1 font-display font-semibold text-slate-50">
-              {bestEfficiencyDay.day}
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3">
-            <div className="text-slate-400">Lecture</div>
-            <div className="mt-1 font-display font-semibold text-slate-50">
-              Coût / arrêt
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3">
-            <div className="text-slate-400">Objectif</div>
-            <div className="mt-1 font-display font-semibold text-olive-300">
-              Réduire le ratio
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Per-trip breakdown */}
+      {/* ============== PER-TRIP BENCHMARK ============== */}
       {metrics ? (
         <Card className="p-5">
           <div className="flex items-start gap-3 mb-5">
-            <div className="w-11 h-11 rounded-lg bg-olive-400/12 border border-olive-400/35 text-olive-300 flex items-center justify-center shrink-0">
-              <Gauge size={18} strokeWidth={2} />
+            <div className="w-11 h-11 rounded-xl bg-eco-400/15 border border-eco-400/35 text-eco-300 flex items-center justify-center shrink-0">
+              <Gauge size={18} />
             </div>
             <div>
-              <div className="eyebrow text-olive-300">— Trajet courant</div>
-              <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1">
-                Comparaison vs baseline rapide
+              <div className="text-[11px] font-bold uppercase tracking-wider text-eco-300">
+                {t("an.compare.eyebrow")}
+              </div>
+              <h3 className="mt-0.5 font-display font-bold text-lg tracking-tight">
+                {t("an.compare.title")}
               </h3>
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div>
-              <CompareGroup
-                title="CO₂ (kg)"
-                color="#8aaa7a"
-                current={metrics.co2Kg}
-                baseline={savings.baselineCo2}
-              />
-            </div>
-            <div>
-              <CompareGroup
-                title="Carburant (L)"
-                color="#c9a96a"
-                current={metrics.fuelLiters}
-                baseline={savings.baselineFuel}
-              />
-            </div>
-            <div>
-              <CompareGroup
-                title="Coût (MAD)"
-                color="#6a9fb5"
-                current={metrics.estimatedCostMAD}
-                baseline={savings.baselineCost}
-              />
-            </div>
+            <CompareGroup
+              title="CO₂ (kg)"
+              color={PALETTE.co2}
+              current={metrics.co2Kg}
+              baseline={savings.baselineCo2}
+              currentLabel={t("an.compare.current")}
+              baselineLabel={t("an.compare.baseline")}
+            />
+            <CompareGroup
+              title="Carburant (L)"
+              color={PALETTE.cost}
+              current={metrics.fuelLiters}
+              baseline={savings.baselineFuel}
+              currentLabel={t("an.compare.current")}
+              baselineLabel={t("an.compare.baseline")}
+            />
+            <CompareGroup
+              title="MAD"
+              color={PALETTE.deliveries}
+              current={metrics.estimatedCostMAD}
+              baseline={savings.baselineCost}
+              currentLabel={t("an.compare.current")}
+              baselineLabel={t("an.compare.baseline")}
+            />
           </div>
         </Card>
       ) : null}
 
-      {/* Equivalences */}
+      {/* ============== EQUIVALENCES ============== */}
       <Card className="p-5">
         <div className="flex items-start gap-3 mb-5">
-          <div className="w-11 h-11 rounded-lg bg-copper-400/14 border border-copper-400/35 text-copper-300 flex items-center justify-center shrink-0">
-            <Leaf size={18} strokeWidth={2} />
+          <div className="w-11 h-11 rounded-xl bg-lime-accent/15 border border-lime-accent/35 text-lime-bright flex items-center justify-center shrink-0">
+            <Trees size={18} />
           </div>
           <div>
-            <div className="eyebrow text-copper-400">— Équivalences</div>
-            <h3 className="font-display font-semibold text-[18px] tracking-tight text-slate-50 mt-1">
-              Ce que 142 kg de CO₂ évités représentent
+            <div className="text-[11px] font-bold uppercase tracking-wider text-lime-bright">
+              {t("an.equiv.eyebrow")}
+            </div>
+            <h3 className="mt-0.5 font-display font-bold text-lg tracking-tight">
+              {t("an.equiv.title")}
             </h3>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Equivalence icon={Trees} big="6" label="arbres plantés · compensation annuelle" accent="#8aaa7a" />
-          <Equivalence icon={Fuel} big="58 L" label="carburant économisé" accent="#c9a96a" />
-          <Equivalence icon={Coins} big="1 240 MAD" label="budget opérationnel évité" accent="#6a9fb5" />
+          <Equivalence
+            icon={Trees}
+            big={Math.round(totals.co2 / 25)}
+            label={t("an.equiv.trees")}
+            accent={PALETTE.co2}
+          />
+          <Equivalence
+            icon={Fuel}
+            big={`${Math.round(totals.co2 / 2.68)} L`}
+            label={t("an.equiv.fuel")}
+            accent={PALETTE.cost}
+          />
+          <Equivalence
+            icon={Coins}
+            big={`${Math.round(totals.cost * 0.18).toLocaleString()} MAD`}
+            label={t("an.equiv.budget")}
+            accent={PALETTE.deliveries}
+          />
         </div>
       </Card>
     </div>
   );
 }
 
-function CompareGroup({ title, color, current, baseline }) {
+/* ---------- Sub-components ---------- */
+function KpiCard({ icon: Icon, label, value, suffix, accent, delta, series }) {
+  const Arrow = delta?.direction === "up" ? ArrowUpRight : ArrowDownRight;
+  // For "down is good" metrics (CO₂, cost), green; for "up is good" metrics, green too.
+  // Use the accent color for the arrow; the parent decides what direction means.
+  return (
+    <div className="card-glass relative overflow-hidden p-4">
+      <div
+        className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-20 blur-2xl"
+        style={{ background: accent }}
+      />
+      <div className="relative flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          {Icon ? (
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{
+                background: `${accent}1f`,
+                border: `1px solid ${accent}40`,
+                color: accent,
+              }}
+            >
+              <Icon size={15} />
+            </div>
+          ) : null}
+          <div className="text-[10.5px] uppercase font-bold tracking-wider text-white/55">
+            {label}
+          </div>
+        </div>
+        {series?.length ? (
+          <Sparkline data={series} color={accent} width={56} height={20} />
+        ) : null}
+      </div>
+      <div className="relative mt-3 flex items-baseline gap-1.5">
+        <span className="font-display font-bold text-2xl leading-none tabular-nums">
+          {Number(value).toLocaleString("fr-FR")}
+        </span>
+        {suffix ? (
+          <span className="text-[11px] text-white/50 font-semibold">{suffix}</span>
+        ) : null}
+      </div>
+      {delta ? (
+        <div
+          className="relative mt-1.5 inline-flex items-center gap-1 text-[10.5px] font-semibold"
+          style={{ color: accent }}
+        >
+          <Arrow size={11} />
+          {delta.text}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Mini({ label, value, color, icon: Icon }) {
+  return (
+    <div
+      className="rounded-xl border p-3"
+      style={{
+        background: `${color}10`,
+        borderColor: `${color}35`,
+      }}
+    >
+      <div
+        className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider"
+        style={{ color }}
+      >
+        {Icon ? <Icon size={11} /> : null}
+        {label}
+      </div>
+      <div className="mt-1 font-display font-bold text-[13px] text-white/90">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function Gauge3({ icon: Icon, label, value, color }) {
+  return (
+    <div
+      className="rounded-xl border p-3 flex flex-col items-center gap-2 text-center"
+      style={{
+        background: `${color}0e`,
+        borderColor: `${color}30`,
+      }}
+    >
+      <RadialProgress value={value} max={100} size={72} stroke={7} color={color} />
+      <div
+        className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+        style={{ color }}
+      >
+        {Icon ? <Icon size={11} /> : null}
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function CompareGroup({
+  title,
+  color,
+  current,
+  baseline,
+  currentLabel,
+  baselineLabel,
+}) {
   const max = Math.max(current, baseline, 1);
+  const saved = Math.max(0, baseline - current);
   return (
     <div>
-      <div className="eyebrow text-slate-400 mb-3">{title}</div>
-      <div className="space-y-3">
-        <HBar label="Actuel" sub={String(current)} value={current} max={max} color={color} />
-        <HBar label="Baseline" sub={String(baseline)} value={baseline} max={max} color="#4a5451" />
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-white/55">
+          {title}
+        </div>
+        {saved > 0 ? (
+          <span
+            className="text-[10px] font-bold tabular-nums"
+            style={{ color }}
+          >
+            −{Number(saved).toLocaleString("fr-FR")}
+          </span>
+        ) : null}
+      </div>
+      <div className="space-y-2.5">
+        <HBar
+          label={currentLabel}
+          sub={String(Number(current).toLocaleString("fr-FR"))}
+          value={current}
+          max={max}
+          color={color}
+        />
+        <HBar
+          label={baselineLabel}
+          sub={String(Number(baseline).toLocaleString("fr-FR"))}
+          value={baseline}
+          max={max}
+          color="#475569"
+        />
       </div>
     </div>
   );
@@ -307,29 +586,29 @@ function CompareGroup({ title, color, current, baseline }) {
 function Equivalence({ icon: Icon, big, label, accent }) {
   return (
     <div
-      className="p-4 rounded-lg border relative overflow-hidden"
+      className="p-4 rounded-2xl border relative overflow-hidden"
       style={{
-        background: `${accent}0e`,
+        background: `${accent}0f`,
         borderColor: `${accent}33`,
       }}
     >
       <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center border"
+        className="w-10 h-10 rounded-xl flex items-center justify-center"
         style={{
-          background: `${accent}18`,
-          borderColor: `${accent}40`,
+          background: `${accent}22`,
+          border: `1px solid ${accent}40`,
           color: accent,
         }}
       >
-        <Icon size={16} strokeWidth={2} />
+        <Icon size={17} />
       </div>
       <div
-        className="mt-3 font-display font-semibold text-[26px] tracking-[-0.03em] leading-none tabular"
+        className="mt-3 font-display font-bold text-[26px] leading-none tabular-nums"
         style={{ color: accent }}
       >
         {big}
       </div>
-      <div className="mt-1.5 text-[12px] text-slate-300">{label}</div>
+      <div className="mt-1.5 text-[12px] text-white/65">{label}</div>
     </div>
   );
 }

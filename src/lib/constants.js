@@ -91,51 +91,8 @@ export const screens = [
 ];
 
 // ---------- Deliveries ----------
-export const deliveryStops = [
-  {
-    stop: 1,
-    client: "Tournée TRK-201",
-    city: "Casablanca",
-    window: "ETA 13:19 · Fenêtre 12:00–14:00",
-    startedAt: "08:30",
-    arrivalWindow: "12:00–14:00",
-    priority: "Haute",
-    status: "En route",
-    vehicleId: "TRK-201",
-  },
-  {
-    stop: 2,
-    client: "Incident TRK-202",
-    city: "Casablanca",
-    window: "ETA 13:34 · Fenêtre 12:00–14:00",
-    startedAt: "10:15",
-    arrivalWindow: "12:00–14:00",
-    priority: "Haute",
-    status: "Incident · en route",
-    vehicleId: "TRK-202",
-    incident: true,
-  },
-  {
-    stop: 3,
-    client: "Préparation TRK-203",
-    city: "Marrakech",
-    window: "ETA 16:40 · Fenêtre 15:30–17:00",
-    startedAt: "12:00",
-    arrivalWindow: "15:30–17:00",
-    priority: "Moyenne",
-    status: "Chargement",
-    vehicleId: "TRK-203",
-  },
-  {
-    stop: 4,
-    client: "Dépôt Agadir",
-    city: "Agadir",
-    window: "En attente",
-    priority: "Normale",
-    status: "Au dépôt",
-    vehicleId: "TRK-204",
-  },
-];
+// Defined further down: derived from fleetVehicles so the timings stay
+// consistent with the actual road distance and current Morocco time.
 
 export const routeBotFAQs = [
   "Est-ce que je pars maintenant ?",
@@ -146,14 +103,236 @@ export const routeBotFAQs = [
 ];
 
 // ---------- Realtime alerts ----------
+// Defined further down so the incident alert tracks the dynamically computed
+// ETA of TRK-202 instead of a hard-coded value that drifted out of sync.
+
+export const teamMembers = [
+  { name: "El Mehdi Omar Ben El Haj", role: "Lead Developer", lead: true },
+  { name: "Ossama Ait Abdelhalim", role: "Team Member" },
+  { name: "Hajar Ait Saleh", role: "Team Member" },
+  { name: "Bilal Laadioui", role: "Team Member" },
+  { name: "Saad Daoud", role: "Team Member" },
+  { name: "Taybi Zayd", role: "Team Member" },
+  { name: "Kaoutar Enndal", role: "Team Member" },
+];
+
+// ---------- NEW: Fleet ----------
+// Truck timing is derived from real road distance + a reasonable cruising
+// speed so the demo's startedAt / ETA / arrivalWindow always make sense
+// (not "left at 08:30, arrives 13:19" for a 1h trip). Anchored on the actual
+// current Morocco time, so trucks always appear mid-trip regardless of when
+// the dashboard is viewed.
+
+function _haversineKm(a, b) {
+  if (!a || !b) return 0;
+  const R = 6371;
+  const dLat = ((b[0] - a[0]) * Math.PI) / 180;
+  const dLon = ((b[1] - a[1]) * Math.PI) / 180;
+  const lat1 = (a[0] * Math.PI) / 180;
+  const lat2 = (b[0] * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+const TRUCK_AVG_KMPH = 78;
+const ROAD_FACTOR = 1.28;
+
+function _pad2(n) {
+  return String(n).padStart(2, "0");
+}
+function _minutesToHHMM(min) {
+  const wrapped = ((min % 1440) + 1440) % 1440;
+  const h = Math.floor(wrapped / 60);
+  const m = Math.round(wrapped % 60);
+  return `${_pad2(h)}:${_pad2(m)}`;
+}
+function _realMoroccoMin() {
+  const fmt = new Intl.DateTimeFormat("fr-MA", {
+    timeZone: "Africa/Casablanca",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const [h, m] = fmt.format(new Date()).split(":").map(Number);
+  return h * 60 + m;
+}
+// Reference "now" for the demo. Real Morocco time during work hours;
+// otherwise we simulate mid-afternoon so the dashboard never shows trips
+// that started at 03:30 or finished at 04:50.
+function _referenceMoroccoMin() {
+  const real = _realMoroccoMin();
+  if (real >= 7 * 60 && real < 20 * 60) return real;
+  return 14 * 60 + 30;
+}
+
+function _computeFleetTiming(v) {
+  const from = cityCoords[v.from];
+  const to = v.to && v.to !== "—" ? cityCoords[v.to] : null;
+  const distanceKm = from && to ? Math.round(_haversineKm(from, to) * ROAD_FACTOR) : 0;
+  const drivingMin = distanceKm > 0 ? Math.round((distanceKm / TRUCK_AVG_KMPH) * 60) : 0;
+  const refMin = _referenceMoroccoMin();
+  const incidentDelay = v.incident ? 12 : 0;
+  const totalMin = drivingMin + incidentDelay;
+
+  if (v.status === "en_route" && drivingMin > 0) {
+    const target = Math.min(0.95, Math.max(0.05, v.targetProgress ?? 0.5));
+    const elapsedMin = Math.round(totalMin * target);
+    const startedMin = refMin - elapsedMin;
+    const etaMin = refMin + (totalMin - elapsedMin);
+    const etaOriginalMin = etaMin - incidentDelay;
+    return {
+      distanceKm,
+      eta: _minutesToHHMM(etaMin),
+      etaOriginal: incidentDelay ? _minutesToHHMM(etaOriginalMin) : null,
+      incidentDelayMin: incidentDelay || null,
+      startedAt: _minutesToHHMM(startedMin),
+      arrivalWindow: `${_minutesToHHMM(etaMin - 60)}–${_minutesToHHMM(etaMin + 30)}`,
+      progress: target,
+      kmToday: Math.round(distanceKm * target) + (v.kmTodayBase || 0),
+    };
+  }
+
+  if (v.status === "loading") {
+    const loadingElapsed = v.loadingElapsedMin ?? 25;
+    const loadingRemaining = v.loadingRemainingMin ?? 35;
+    const departureMin = refMin + loadingRemaining;
+    const etaMin = departureMin + drivingMin;
+    return {
+      distanceKm,
+      eta: _minutesToHHMM(etaMin),
+      etaOriginal: null,
+      incidentDelayMin: null,
+      startedAt: _minutesToHHMM(refMin - loadingElapsed),
+      arrivalWindow: `${_minutesToHHMM(etaMin - 60)}–${_minutesToHHMM(etaMin + 30)}`,
+      progress: 0,
+      kmToday: v.kmTodayBase || 0,
+      scheduledDeparture: _minutesToHHMM(departureMin),
+    };
+  }
+
+  // idle / no destination
+  return {
+    distanceKm,
+    eta: "—",
+    etaOriginal: null,
+    incidentDelayMin: null,
+    startedAt: null,
+    arrivalWindow: null,
+    progress: 0,
+    kmToday: v.kmTodayBase || 0,
+  };
+}
+
+const _fleetBase = [
+  {
+    id: "TRK-201",
+    driver: "A. Benali",
+    status: "en_route",
+    from: "Rabat",
+    to: "Casablanca",
+    load: 78,
+    fuel: 64,
+    temp: 22,
+    targetProgress: 0.55,
+    kmTodayBase: 55,
+    client: "Tournée TRK-201",
+    priority: "Haute",
+  },
+  {
+    id: "TRK-202",
+    driver: "Y. Chraibi",
+    status: "en_route",
+    // Longer corridor so the AI reroute around the incident is clearly visible.
+    from: "Fes",
+    to: "Rabat",
+    load: 54,
+    fuel: 81,
+    temp: 19,
+    // Truck stays well before the incident zone (~52% of route) so the
+    // red blocked branch and green AI reroute are both visible on the map.
+    targetProgress: 0.32,
+    kmTodayBase: 32,
+    incident: true,
+    incidentText: "Incident détecté : recalcul IA en cours",
+    client: "Incident TRK-202",
+    priority: "Haute",
+  },
+  {
+    id: "TRK-203",
+    driver: "M. El Idrissi",
+    status: "loading",
+    from: "Casablanca",
+    to: "Marrakech",
+    load: 92,
+    fuel: 95,
+    temp: 24,
+    loadingElapsedMin: 20,
+    loadingRemainingMin: 40,
+    kmTodayBase: 0,
+    client: "Préparation TRK-203",
+    priority: "Moyenne",
+  },
+  {
+    id: "TRK-204",
+    driver: "S. Amrani",
+    status: "idle",
+    from: "Agadir",
+    to: "Ouarzazate",
+    load: 0,
+    fuel: 73,
+    temp: 27,
+    kmTodayBase: 173,
+    client: "Dépôt Agadir",
+    priority: "Normale",
+  },
+];
+
+export const fleetVehicles = _fleetBase.map((v) => ({
+  ...v,
+  ..._computeFleetTiming(v),
+}));
+
+// ---------- Deliveries (derived from fleet so timings stay consistent) ----------
+export const deliveryStops = fleetVehicles.map((v, i) => {
+  const isIdle = v.status === "idle";
+  const statusLabel = v.incident
+    ? "Incident · en route"
+    : v.status === "en_route"
+      ? "En route"
+      : v.status === "loading"
+        ? "Chargement"
+        : "Au dépôt";
+  return {
+    stop: i + 1,
+    client: v.client,
+    city: v.to && v.to !== "—" ? v.to : v.from,
+    window: isIdle ? "En attente" : `ETA ${v.eta} · Fenêtre ${v.arrivalWindow}`,
+    startedAt: v.startedAt,
+    arrivalWindow: v.arrivalWindow,
+    priority: v.priority,
+    status: statusLabel,
+    vehicleId: v.id,
+    incident: v.incident || false,
+  };
+});
+
+const _trk202 = fleetVehicles.find((v) => v.id === "TRK-202");
+
+// ---------- Realtime alerts (after fleet so TRK-202 ETA is live) ----------
 export const realtimeAlerts = [
   {
     level: "Élevé",
     title: "Incident sur livraison Client C",
-    text: "Blocage détecté à mi-parcours vers Casablanca. L'IA a recalculé une nouvelle trajectoire : ETA 13:34, toujours dans la fenêtre 12:00–14:00.",
-    eta: "ETA recalculée : 13:34 · dans la fenêtre 12:00–14:00",
+    text: _trk202
+      ? `Blocage détecté à mi-parcours vers ${_trk202.to}. L'IA a recalculé une nouvelle trajectoire : ETA ${_trk202.etaOriginal} → ${_trk202.eta} (+${_trk202.incidentDelayMin} min), toujours dans la fenêtre ${_trk202.arrivalWindow}.`
+      : "Blocage détecté à mi-parcours. L'IA a recalculé une nouvelle trajectoire.",
+    eta: _trk202
+      ? `ETA ${_trk202.etaOriginal} → ${_trk202.eta} (+${_trk202.incidentDelayMin} min) · fenêtre ${_trk202.arrivalWindow}`
+      : "ETA recalculée",
     time: "il y a 2 min",
-    location: "N1 · Casablanca",
+    location: _trk202 ? `N1 · ${_trk202.to}` : "N1",
   },
   {
     level: "Élevé",
@@ -175,80 +354,6 @@ export const realtimeAlerts = [
     text: "Aucun risque météo majeur sur le trajet sélectionné.",
     time: "il y a 1 h",
     location: "Corridor atlantique",
-  },
-];
-
-export const teamMembers = [
-  { name: "El Mehdi Omar Ben El Haj", role: "Lead Developer", lead: true },
-  { name: "Ossama Ait Abdelhalim", role: "Team Member" },
-  { name: "Hajar Ait Saleh", role: "Team Member" },
-  { name: "Bilal Laadioui", role: "Team Member" },
-  { name: "Saad Daoud", role: "Team Member" },
-  { name: "Taybi Zayd", role: "Team Member" },
-  { name: "Kaoutar Enndal", role: "Team Member" },
-];
-
-// ---------- NEW: Fleet ----------
-export const fleetVehicles = [
-  {
-    id: "TRK-201",
-    driver: "A. Benali",
-    status: "en_route",
-    from: "Rabat",
-    to: "Casablanca",
-    progress: 0.62,
-    load: 78,
-    fuel: 64,
-    temp: 22,
-    eta: "13:19",
-    startedAt: "08:30",
-    arrivalWindow: "12:00–14:00",
-    kmToday: 142,
-  },
-  {
-    id: "TRK-202",
-    driver: "Y. Chraibi",
-    status: "en_route",
-    from: "Mohammedia",
-    to: "Casablanca",
-    progress: 0.41,
-    load: 54,
-    fuel: 81,
-    temp: 19,
-    eta: "13:34",
-    startedAt: "10:15",
-    arrivalWindow: "12:00–14:00",
-    kmToday: 88,
-    incident: true,
-    incidentText: "Incident détecté : recalcul IA en cours",
-  },
-  {
-    id: "TRK-203",
-    driver: "M. El Idrissi",
-    status: "loading",
-    from: "Casablanca",
-    to: "Marrakech",
-    progress: 0,
-    load: 92,
-    fuel: 95,
-    temp: 24,
-    eta: "16:40",
-    startedAt: "12:00",
-    arrivalWindow: "15:30–17:00",
-    kmToday: 0,
-  },
-  {
-    id: "TRK-204",
-    driver: "S. Amrani",
-    status: "idle",
-    from: "Agadir",
-    to: "Ouarzazate",
-    progress: 0,
-    load: 0,
-    fuel: 73,
-    temp: 27,
-    eta: "—",
-    kmToday: 173,
   },
 ];
 
@@ -301,14 +406,17 @@ export const weatherSnapshot = [
 ];
 
 // ---------- NEW: 7-day history for analytics charts ----------
+// Numbers tuned to a small truck fleet (~4 vehicles): each delivery day
+// runs ~250–650 km of road, burning 100–250 L of diesel which produces
+// 270–680 kg of CO₂. Cost reflects diesel + driver + maintenance per km.
 export const weekHistory = [
-  { day: "Lun", co2: 412, cost: 1840, deliveries: 14, km: 523 },
-  { day: "Mar", co2: 398, cost: 1720, deliveries: 16, km: 498 },
-  { day: "Mer", co2: 445, cost: 1920, deliveries: 18, km: 576 },
-  { day: "Jeu", co2: 376, cost: 1650, deliveries: 15, km: 462 },
-  { day: "Ven", co2: 512, cost: 2180, deliveries: 22, km: 648 },
-  { day: "Sam", co2: 284, cost: 1280, deliveries: 11, km: 362 },
-  { day: "Dim", co2: 195, cost: 890, deliveries: 7, km: 248 },
+  { day: "Lun", co2: 1180, cost: 4720, deliveries: 14, km: 523 },
+  { day: "Mar", co2: 1062, cost: 4310, deliveries: 16, km: 498 },
+  { day: "Mer", co2: 1295, cost: 5120, deliveries: 18, km: 576 },
+  { day: "Jeu", co2: 974,  cost: 4080, deliveries: 15, km: 462 },
+  { day: "Ven", co2: 1480, cost: 5840, deliveries: 22, km: 648 },
+  { day: "Sam", co2: 762,  cost: 3140, deliveries: 11, km: 362 },
+  { day: "Dim", co2: 510,  cost: 2080, deliveries: 7,  km: 248 },
 ];
 
 // ---------- NEW: Breakdown by mode for donut chart ----------

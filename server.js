@@ -47,51 +47,103 @@ function weatherLabel(code) {
   return "Conditions variables";
 }
 
+// TomTom often snaps the city-center coord to a slow local street where
+// currentSpeed == freeFlowSpeed, giving a fake "0%" congestion. We sample a
+// small grid around the city and keep the segment with the highest free-flow
+// speed — that's the highway/main road, where live measurements are real.
 async function getTraffic(city) {
   const coords = cityCoords[city];
+  if (!coords) {
+    return {
+      risk: "Inconnu",
+      congestionPercent: 0,
+      message: "Coordonnées indisponibles.",
+      available: false,
+    };
+  }
 
   const [lng, lat] = coords;
+  // ~3 km offset in degrees (1° lat ≈ 111 km).
+  const offset = 0.025;
+  const probes = [
+    [lat, lng],
+    [lat + offset, lng],
+    [lat - offset, lng],
+    [lat, lng + offset],
+    [lat, lng - offset],
+    [lat + offset, lng + offset],
+    [lat - offset, lng - offset],
+  ];
 
-  const url =
-    `https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json` +
-    `?key=${TOMTOM_API_KEY}&point=${lat},${lng}`;
+  const responses = await Promise.all(
+    probes.map(async ([pLat, pLng]) => {
+      const url =
+        `https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json` +
+        `?key=${TOMTOM_API_KEY}&point=${pLat},${pLng}&unit=KMPH`;
+      try {
+        const r = await fetch(url);
+        if (!r.ok) return null;
+        const data = await r.json();
+        return data.flowSegmentData || null;
+      } catch {
+        return null;
+      }
+    })
+  );
 
-  const response = await fetch(url);
-  const data = await response.json();
-
-  const flow = data.flowSegmentData;
-
-  if (!flow) {
+  const segments = responses.filter(Boolean);
+  if (!segments.length) {
     return {
       risk: "Inconnu",
       congestionPercent: 0,
       message: "Aucune donnée trafic.",
+      available: false,
+    };
+  }
+
+  // Keep the segment on the largest road (highest freeFlowSpeed). FRC0–FRC2
+  // are motorways and primary roads; FRC3+ are local/residential.
+  segments.sort((a, b) => (b.freeFlowSpeed || 0) - (a.freeFlowSpeed || 0));
+  const flow = segments[0];
+
+  if (!flow?.freeFlowSpeed) {
+    return {
+      risk: "Inconnu",
+      congestionPercent: 0,
+      message: "Aucune mesure live disponible.",
+      available: false,
     };
   }
 
   const congestionPercent = Math.max(
     0,
-    Math.round(
-      (1 - flow.currentSpeed / flow.freeFlowSpeed) * 100
-    )
+    Math.round((1 - flow.currentSpeed / flow.freeFlowSpeed) * 100)
   );
+
+  // Confidence < 0.5 means TomTom is essentially guessing — flag it.
+  const lowConfidence = (flow.confidence ?? 1) < 0.5;
 
   return {
     currentSpeed: flow.currentSpeed,
     freeFlowSpeed: flow.freeFlowSpeed,
     congestionPercent,
-    risk:
-      congestionPercent > 40
+    confidence: flow.confidence,
+    roadClass: flow.frc,
+    risk: lowConfidence
+      ? "Inconnu"
+      : congestionPercent > 40
         ? "Élevé"
         : congestionPercent > 20
-        ? "Moyen"
-        : "Faible",
-    message:
-      congestionPercent > 40
+          ? "Moyen"
+          : "Faible",
+    message: lowConfidence
+      ? "Mesure faible confiance"
+      : congestionPercent > 40
         ? "Trafic dense détecté"
         : congestionPercent > 20
-        ? "Trafic modéré détecté"
-        : "Trafic fluide",
+          ? "Trafic modéré détecté"
+          : "Trafic fluide",
+    available: !lowConfidence,
   };
 }
 
@@ -374,6 +426,22 @@ Réponds de manière humaine, concrète et contextualisée.
   }
 });
 
+// Helpers that never throw — Groq still gets useful context if a provider is down.
+async function safeGetTraffic(city) {
+  try {
+    return await getTraffic(city);
+  } catch {
+    return { risk: "Inconnu", congestionPercent: 0, message: "Trafic indisponible." };
+  }
+}
+async function safeGetWeather(city) {
+  try {
+    return await getWeather(city);
+  } catch {
+    return { risk: "Inconnu", condition: "Indisponible" };
+  }
+}
+
 // AI route decision layer: Groq chooses the best stop order and mode.
 // OSRM / RealMap still draws the real road geometry afterwards.
 app.post("/api/ai-route-decision", async (req, res) => {
@@ -409,10 +477,32 @@ app.post("/api/ai-route-decision", async (req, res) => {
       });
     }
 
+    // Pull live traffic + weather for every stop so Groq decides on real data,
+    // not on a static scenario string.
+    const stops = [startCity, ...waypoints, destinationCity].filter(Boolean);
+    const [trafficSignals, weatherSignals] = await Promise.all([
+      Promise.all(stops.map((c) => safeGetTraffic(c))),
+      Promise.all(stops.map((c) => safeGetWeather(c))),
+    ]);
+
+    const liveContext = stops.map((city, i) => ({
+      city,
+      traffic: trafficSignals[i],
+      weather: weatherSignals[i],
+    }));
+
     const systemPrompt = `
 Tu es RouteBot, une couche IA de décision logistique pour EcoRoute au Maroc.
-Ton rôle est de choisir le meilleur ordre des arrêts et le mode d’optimisation.
-Tu ne dois pas inventer une géométrie routière. Le tracé réel sera généré ensuite par OSRM.
+Tu reçois des données temps réel (trafic TomTom, météo Open-Meteo) pour chaque arrêt.
+Tu dois :
+1. Choisir l'ordre des arrêts (waypoints) qui réduit le mieux les détours et les zones congestionnées.
+2. Choisir le mode le plus adapté en t'appuyant sur les signaux temps réel :
+   - "classic" (trajet rapide) si le trafic est fluide partout et qu'il faut gagner du temps.
+   - "eco" (économie / CO₂) si le trafic et la météo sont stables et que la priorité est la consommation.
+   - "ai" (équilibré) en cas de signaux mixtes ou incertains.
+3. Si le mode actuel est déjà le plus pertinent, recommande-le. Si un autre mode est nettement meilleur, recommande-le et explique pourquoi.
+4. Ne force jamais "eco" par défaut : la décision doit être justifiée par les données fournies.
+5. Tu ne génères pas de coordonnées ni de géométrie : le tracé est calculé par OSRM ensuite.
 Réponds uniquement en JSON valide, sans markdown.
 `;
 
@@ -423,13 +513,21 @@ Réponds uniquement en JSON valide, sans markdown.
       currentMode: mode,
       scenarioKey,
       availableModes,
+      liveContext,
+      modeDefinitions: {
+        ai: "Équilibré : compromis distance / durée / carburant.",
+        eco: "Économie de carburant et CO₂. Durée légèrement plus longue.",
+        classic: "Trajet le plus rapide. Consommation plus élevée.",
+      },
       instructions: {
-        recommendedMode: "Choisir entre ai, eco, classic.",
+        recommendedMode:
+          "Choisir entre ai, eco, classic en fonction de liveContext et currentMode.",
         optimizedStopOrder:
           "Retourner uniquement les mêmes arrêts fournis, réordonnés si nécessaire. Ne jamais ajouter de ville.",
-        riskLevel: "Choisir entre Faible, Moyen, Élevé.",
-        reason: "Expliquer brièvement en français.",
-        advice: "Liste de 2 à 4 conseils courts en français.",
+        riskLevel: "Choisir entre Faible, Moyen, Élevé en fonction du trafic et de la météo.",
+        reason:
+          "Expliquer brièvement en français pourquoi ce mode et cet ordre sont recommandés, en citant un signal concret (trafic %, pluie, vent...).",
+        advice: "Liste de 2 à 4 conseils courts et concrets en français.",
       },
       outputShape: {
         recommendedMode: "ai",
@@ -487,6 +585,7 @@ Réponds uniquement en JSON valide, sans markdown.
       advice: Array.isArray(ai.advice)
         ? ai.advice.slice(0, 4).map(String)
         : ["Vérifier le trafic avant le départ.", "Surveiller l’ETA pendant la tournée."],
+      liveContext,
     });
   } catch (error) {
     console.error("AI route decision error:", error);

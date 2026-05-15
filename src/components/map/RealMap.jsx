@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -13,6 +13,7 @@ import "leaflet/dist/leaflet.css";
 import { ArrowRight } from "lucide-react";
 import { cities, cityCoords } from "../../lib/constants";
 import { getCityCoords } from "../../lib/helpers";
+import { useT } from "../../lib/i18n";
 
 const MOROCCO_CENTER = [31.79, -7.09];
 const MOROCCO_ZOOM = 6;
@@ -122,38 +123,48 @@ function incidentIcon() {
 
 /* ---------- Helpers ---------- */
 /*
-  AnimatedRoutePolyline drives the dashed flow effect directly in JS by
-  updating the SVG path's stroke-dashoffset every frame on the underlying
-  Leaflet polyline. CSS-based animation through pathOptions.className was
-  unreliable across react-leaflet renders and production builds, so we
-  attach to the path element via the polyline ref and animate it ourselves.
+  Sweeping-shimmer route style:
+  - A clean solid line with a soft outer halo.
+  - Four short bright highlights slide along the path on a continuous loop,
+    evenly spaced and graduated in brightness so the route feels populated
+    without turning into a dashed pattern.
 */
 function AnimatedRoutePolyline({
   positions,
   color,
   weight = 5.5,
-  dash = "14 18",
-  speed = 40,
+  speed = 360, // SVG units per second the shimmer travels
   opacity = 1,
+  // Legacy prop, ignored.
+  // eslint-disable-next-line no-unused-vars
+  dash,
 }) {
-  const polylineRef = useRef(null);
+  const shimmerRefs = [
+    useRef(null),
+    useRef(null),
+    useRef(null),
+    useRef(null),
+  ];
   const offsetRef = useRef(0);
   const rafRef = useRef(null);
   const lastTimeRef = useRef(null);
 
-  const setDashAttrs = useCallback((path, dashValue, offsetValue) => {
-    if (!path) return;
-    path.setAttribute("stroke-dasharray", dashValue);
-    path.setAttribute("stroke-dashoffset", String(offsetValue));
-  }, []);
+  // Lighter tint of the main color for the shimmers.
+  const shimmerColor = useMemo(() => {
+    if (!color || !color.startsWith("#") || color.length !== 7) return "#ffffff";
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const mix = (c) => Math.round(c + (255 - c) * 0.7);
+    return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+  }, [color]);
 
   useEffect(() => {
-    const polyline = polylineRef.current;
-    if (!polyline) return undefined;
-    const path = polyline._path;
-    if (!path) return undefined;
-
-    setDashAttrs(path, dash, offsetRef.current);
+    const segLen = 95; // length of each shimmer segment in SVG units
+    const gap = 2400; // gap between cycles per polyline
+    const cycle = segLen + gap;
+    const count = shimmerRefs.length;
+    const stagger = cycle / count;
 
     function tick(now) {
       if (lastTimeRef.current == null) lastTimeRef.current = now;
@@ -161,36 +172,77 @@ function AnimatedRoutePolyline({
       lastTimeRef.current = now;
 
       offsetRef.current -= (elapsed / 1000) * speed;
-      if (offsetRef.current < -10000) offsetRef.current = 0;
+      if (offsetRef.current < -cycle) offsetRef.current += cycle;
 
-      const livePath = polylineRef.current?._path;
-      if (livePath) {
-        livePath.setAttribute("stroke-dashoffset", String(offsetRef.current));
+      for (let i = 0; i < count; i += 1) {
+        const path = shimmerRefs[i].current?._path;
+        if (!path) continue;
+        path.setAttribute("stroke-dasharray", `${segLen} ${gap}`);
+        path.setAttribute(
+          "stroke-dashoffset",
+          String(offsetRef.current - i * stagger)
+        );
       }
       rafRef.current = requestAnimationFrame(tick);
     }
 
     rafRef.current = requestAnimationFrame(tick);
-
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
       lastTimeRef.current = null;
     };
-  }, [positions, dash, speed, setDashAttrs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speed]);
+
+  // All four shimmers share the same bright styling so the flow reads as a
+  // continuous bright stream rather than a fading head/tail.
+  const shimmerStyles = [
+    { weightMul: 1.05, op: 0.95 },
+    { weightMul: 1.05, op: 0.95 },
+    { weightMul: 1.05, op: 0.95 },
+    { weightMul: 1.05, op: 0.95 },
+  ];
 
   return (
-    <Polyline
-      ref={polylineRef}
-      positions={positions}
-      pathOptions={{
-        color,
-        weight,
-        opacity,
-        lineCap: "round",
-        lineJoin: "round",
-      }}
-    />
+    <>
+      {/* Soft outer halo */}
+      <Polyline
+        positions={positions}
+        pathOptions={{
+          color,
+          weight: weight * 2.2,
+          opacity: 0.14 * opacity,
+          lineCap: "round",
+          lineJoin: "round",
+        }}
+      />
+      {/* Clean solid base line */}
+      <Polyline
+        positions={positions}
+        pathOptions={{
+          color,
+          weight,
+          opacity: 0.95 * opacity,
+          lineCap: "round",
+          lineJoin: "round",
+        }}
+      />
+      {/* Stream of shimmers */}
+      {shimmerStyles.map((s, i) => (
+        <Polyline
+          key={i}
+          ref={shimmerRefs[i]}
+          positions={positions}
+          pathOptions={{
+            color: shimmerColor,
+            weight: weight * s.weightMul,
+            opacity: s.op * opacity,
+            lineCap: "round",
+            lineJoin: "round",
+          }}
+        />
+      ))}
+    </>
   );
 }
 
@@ -318,15 +370,68 @@ function useTruckProgress(active, routePoints, startProgress = 0.35, zoom = MORO
   return progress;
 }
 
-function TruckLayer({ active, routePoints, startProgress }) {
+function TruckLayer({ active, routePoints, startProgress, followTruck = false }) {
   const map = useMap();
   const [zoom, setZoom] = useState(map.getZoom());
+  // When the user drags or zooms, pause auto-follow until they hit "recentrer".
+  const userInteractedRef = useRef(false);
+  const programmaticPanRef = useRef(false);
 
   useMapEvents({
     zoomend: () => setZoom(map.getZoom()),
+    // dragstart fires only on user-initiated panning.
+    dragstart: () => {
+      userInteractedRef.current = true;
+    },
+    // movestart fires for both user and programmatic moves; we only flag
+    // the user's by ignoring the move we initiated ourselves.
+    movestart: () => {
+      if (programmaticPanRef.current) {
+        programmaticPanRef.current = false;
+        return;
+      }
+    },
   });
 
+  // Reset interaction lock when follow mode toggles or the route changes.
+  const routeKey = routePoints?.length || 0;
+  useEffect(() => {
+    userInteractedRef.current = false;
+  }, [followTruck, routeKey]);
+
+  // When follow turns on, zoom in close to the truck so it's actually useful.
+  const wasFollowingRef = useRef(false);
+  useEffect(() => {
+    if (followTruck && !wasFollowingRef.current && active && routePoints?.length > 1) {
+      const truckNow = getPointAtProgress(routePoints, startProgress);
+      if (truckNow) {
+        programmaticPanRef.current = true;
+        map.setView(truckNow, Math.max(map.getZoom(), 11), { animate: true });
+      }
+    }
+    wasFollowingRef.current = followTruck;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followTruck, active]);
+
   const progress = useTruckProgress(active, routePoints, startProgress, zoom);
+
+  // Pan the map to keep the truck on screen when follow is on and the user
+  // hasn't manually moved the map.
+  const truckPos = active ? getPointAtProgress(routePoints, progress) : null;
+  useEffect(() => {
+    if (!followTruck || !active || !truckPos) return;
+    if (userInteractedRef.current) return;
+
+    // Only pan if the truck has actually moved off-center to avoid jitter.
+    const center = map.getCenter();
+    const dLat = Math.abs(center.lat - truckPos[0]);
+    const dLng = Math.abs(center.lng - truckPos[1]);
+    if (dLat < 0.005 && dLng < 0.005) return;
+
+    programmaticPanRef.current = true;
+    map.panTo(truckPos, { animate: true, duration: 0.6 });
+  }, [followTruck, active, truckPos, map]);
+
   if (!active) return null;
 
   return <AnimatedTruck routePoints={routePoints} progress={progress} />;
@@ -378,6 +483,58 @@ async function fetchOsrmRoute(points, signal) {
   return coords.map(([lng, lat]) => [lat, lng]);
 }
 
+// Build a perpendicular detour midpoint between two points. Direction controls
+// which side of the direct line the detour bends toward, so two synthesized
+// alternatives (eco vs ai) clearly diverge on the map.
+function buildDetourMidpoint(fromPoint, toPoint, direction = 1, strength = 0.4) {
+  if (!fromPoint || !toPoint) return null;
+
+  const [fromLat, fromLng] = fromPoint;
+  const [toLat, toLng] = toPoint;
+
+  const midLat = (fromLat + toLat) / 2;
+  const midLng = (fromLng + toLng) / 2;
+
+  const dLat = toLat - fromLat;
+  const dLng = toLng - fromLng;
+  const length = Math.sqrt(dLat * dLat + dLng * dLng) || 1;
+
+  // The perpendicular vector. Direction flips the side.
+  const perpLat = (-dLng / length) * direction;
+  const perpLng = (dLat / length) * direction;
+
+  // Offset proportional to the leg length so short city hops still reroute
+  // visibly while long corridors don't get pulled across the country.
+  const offset = Math.max(0.08, Math.min(0.35, length * strength));
+
+  return [midLat + perpLat * offset, midLng + perpLng * offset];
+}
+
+// Synthesize a per-mode alternative by asking OSRM to route through a forced
+// midpoint. Used when OSRM only returns one real alternative.
+async function fetchSynthesizedAlternative(orderedCoords, direction, strength, signal) {
+  if (orderedCoords.length < 2) return [];
+  const start = orderedCoords[0];
+  const end = orderedCoords[orderedCoords.length - 1];
+  const mid = buildDetourMidpoint(start, end, direction, strength);
+  if (!mid) return [];
+
+  // Insert the detour midpoint between start and end while preserving any
+  // user-supplied intermediate stops.
+  const viaPoints = [
+    start,
+    ...orderedCoords.slice(1, -1),
+    mid,
+    end,
+  ];
+
+  try {
+    return await fetchOsrmRoute(viaPoints, signal);
+  } catch {
+    return [];
+  }
+}
+
 
 /* ---------- Main component ---------- */
 export default function RealMap({
@@ -386,6 +543,11 @@ export default function RealMap({
   waypointCities = EMPTY_WAYPOINTS,
   hasRoute,
   routeMode = "ai",
+  // When true (Planner), the map keeps a separate geometry per mode so
+  // switching between Rapide / IA / Éco visibly swaps polylines. Other pages
+  // (Deliveries, Fleet) want a single direct OSRM route — we don't want a
+  // synthesized perpendicular detour bending the truck through random cities.
+  enableModeAlternatives = false,
   incidentReroute = false,
   incidentLabel = "Incident détecté",
   truckStartProgress = 0.35,
@@ -393,8 +555,12 @@ export default function RealMap({
   height = 480,
   onSelectCity,
   showTruck = false,
+  // When true, the map auto-pans to keep the truck visible. Used by
+  // Livraisons so the dispatcher's view follows the vehicle.
+  followTruck = false,
   extraMarkers = EMPTY_MARKERS,
 }) {
+  const t = useT();
   const waypointKey = (waypointCities || []).join('|');
   const markerKey = (extraMarkers || []).map((m) => m.id).join('|');
 
@@ -409,9 +575,25 @@ export default function RealMap({
     toCoords,
   ].filter(Boolean);
   const canShowRoute = Boolean(hasRoute && fromCoords && toCoords && fullRouteCoords.length >= 2);
-  const [routePoints, setRoutePoints] = useState([]);
+  // routesByMode caches the OSRM geometries per visual mode. Switching modes
+  // just picks a different cached geometry, so the map never re-fetches and
+  // the line never blanks on mode change.
+  const [routesByMode, setRoutesByMode] = useState({
+    ai: [],
+    eco: [],
+    classic: [],
+  });
   const [alternativeRoutePoints, setAlternativeRoutePoints] = useState([]);
   const [routeSource, setRouteSource] = useState("none");
+
+  const routePoints =
+    routesByMode[routeMode]?.length
+      ? routesByMode[routeMode]
+      : routesByMode.ai?.length
+        ? routesByMode.ai
+        : routesByMode.classic?.length
+          ? routesByMode.classic
+          : routesByMode.eco || [];
 
   // Visual palette per mode
   const routeVisual = useMemo(() => {
@@ -421,6 +603,11 @@ export default function RealMap({
       return { main: "#38bdf8", glow: "#93c5fd", label: "Trajet rapide" };
     return { main: "#a3e635", glow: "#d9f99d", label: "IA optimisée" };
   }, [routeMode]);
+
+  // Track the previous route signature so we can clear stale geometry only
+  // when the actual cities change (different truck / new route), not on mode
+  // switches where we want to keep the line visible while the new mode loads.
+  const prevSigRef = useRef("");
 
   // Fetch OSRM route
   useEffect(() => {
@@ -434,54 +621,114 @@ export default function RealMap({
     const orderedCoords = [fCoords, ...wCoords, tCoords].filter(Boolean);
     const can = Boolean(hasRoute && fCoords && tCoords && orderedCoords.length >= 2);
 
-    function fallbackPolyline(points) {
-      const expanded = [];
-      for (let i = 0; i < points.length - 1; i += 1) {
-        const a = points[i];
-        const b = points[i + 1];
-        const midLat = (a[0] + b[0]) / 2;
-        const midLng = (a[1] + b[1]) / 2;
-        const inlandLng = Math.min(midLng + 0.18, Math.max(a[1], b[1]) + 0.25);
-        if (i === 0) expanded.push(a);
-        expanded.push([midLat, inlandLng], b);
-      }
-      return expanded;
+    // Signature for "this is a different route". When it changes, drop the
+    // stale geometry immediately so the previous truck's path doesn't render
+    // with the new truck's position.
+    const sig = `${fromCity || ""}|${toCity || ""}|${waypointKey}|${incidentReroute ? "i" : ""}`;
+    if (sig !== prevSigRef.current) {
+      prevSigRef.current = sig;
+      setRoutesByMode({ ai: [], eco: [], classic: [] });
+      setAlternativeRoutePoints([]);
     }
 
     async function load() {
       if (!can) {
-        setRoutePoints([]);
+        setRoutesByMode({ ai: [], eco: [], classic: [] });
+        setAlternativeRoutePoints([]);
         return;
       }
       // Use OSRM only so localhost and Vercel draw the same road route.
-      setRoutePoints([]);
+      // Keep previous routePoints visible until the new fetch resolves so the
+      // line doesn't visually break on re-renders (e.g. mode switches).
       setRouteSource("loading");
       try {
         const coordString = orderedCoords
           .map((coords) => `${coords[1]},${coords[0]}`)
           .join(";");
-        const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?alternatives=${incidentReroute ? "true" : "false"}&steps=false&overview=full&geometries=geojson`;
+        // Always request alternatives so each mode (Rapide / IA / Éco) can map
+        // to a different real OSRM route when the road network offers them.
+        const url = `https://router.project-osrm.org/route/v1/driving/${coordString}?alternatives=3&steps=false&overview=full&geometries=geojson`;
         const res = await fetch(url, { signal: controller.signal });
         const data = await res.json();
         if (cancelled) return;
         if (!res.ok || !data.routes?.[0]?.geometry?.coordinates?.length)
           throw new Error("OSRM unavailable");
-        const points = data.routes[0].geometry.coordinates.map(([lng, lat]) => [
-          lat,
-          lng,
-        ]);
 
+        const allRoutes = (data.routes || [])
+          .filter((r) => r?.geometry?.coordinates?.length)
+          .map((r) => ({
+            duration: r.duration,
+            distance: r.distance,
+            points: r.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+          }));
+
+        // Build per-mode assignment from the alternatives.
+        // - classic = the fastest (shortest duration)
+        // - eco     = the most distinct alternative (slowest / longest, often avoids urban core)
+        // - ai      = middle compromise, defaults to fastest if only one returned
+        const byDuration = [...allRoutes].sort((a, b) => a.duration - b.duration);
+        const fastest = byDuration[0];
+        const slowest = byDuration[byDuration.length - 1];
+        const middle =
+          byDuration.length >= 3
+            ? byDuration[Math.floor(byDuration.length / 2)]
+            : null;
+
+        const nextRoutesByMode = {
+          classic: fastest?.points || [],
+          eco:
+            byDuration.length > 1 && slowest && slowest !== fastest
+              ? slowest.points
+              : fastest?.points || [],
+          ai: (middle || fastest)?.points || [],
+        };
+
+        // OSRM's public demo often returns only one route. Synthesize visibly
+        // different alternatives by routing through forced detour midpoints so
+        // switching modes always changes the polyline on the map.
+        // Skipped on pages that don't need mode-specific geometries (e.g. Deliveries),
+        // where bending the route would create illogical detours.
+        if (enableModeAlternatives) {
+          const ecoSame =
+            !nextRoutesByMode.eco.length ||
+            nextRoutesByMode.eco === nextRoutesByMode.classic;
+          const aiSame =
+            !nextRoutesByMode.ai.length ||
+            nextRoutesByMode.ai === nextRoutesByMode.classic;
+
+          if (ecoSame) {
+            const ecoSynth = await fetchSynthesizedAlternative(
+              orderedCoords,
+              +1,
+              0.32,
+              controller.signal
+            );
+            if (!cancelled && ecoSynth.length) nextRoutesByMode.eco = ecoSynth;
+          }
+          if (aiSame) {
+            const aiSynth = await fetchSynthesizedAlternative(
+              orderedCoords,
+              -1,
+              0.18,
+              controller.signal
+            );
+            if (!cancelled && aiSynth.length) nextRoutesByMode.ai = aiSynth;
+          }
+        }
+
+        // Incident handling stays compatible: keep the legacy alternativeRoutePoints
+        // signal for the red branch + reroute polyline.
         let alternativePoints =
-          incidentReroute && data.routes?.[1]?.geometry?.coordinates?.length
-            ? data.routes[1].geometry.coordinates.map(([lng, lat]) => [lat, lng])
+          incidentReroute && allRoutes[1]?.points?.length
+            ? allRoutes[1].points
             : [];
 
-        // OSRM often returns no alternative on short urban routes.
-        // In that case, force a real recalculated route via a detour point and ask OSRM again.
-        if (incidentReroute && !alternativePoints.length && points.length > 4) {
+        const primaryPoints = fastest?.points || [];
+
+        if (incidentReroute && !alternativePoints.length && primaryPoints.length > 4) {
           try {
-            const incidentIdx = Math.max(1, Math.floor(points.length * 0.52));
-            const incidentPoint = points[incidentIdx];
+            const incidentIdx = Math.max(1, Math.floor(primaryPoints.length * 0.52));
+            const incidentPoint = primaryPoints[incidentIdx];
             const destinationPoint = orderedCoords[orderedCoords.length - 1];
             const detourPoint = buildDetourPoint(incidentPoint, destinationPoint);
 
@@ -498,16 +745,18 @@ export default function RealMap({
         }
 
         if (!cancelled) {
-          setRoutePoints(points);
+          setRoutesByMode(nextRoutesByMode);
           setAlternativeRoutePoints(alternativePoints);
           setRouteSource(
-            alternativePoints.length ? "OSRM + reroute incident" : "OSRM"
+            allRoutes.length > 1
+              ? `OSRM · ${allRoutes.length} variantes`
+              : "OSRM"
           );
         }
       } catch (err) {
         if (cancelled || err?.name === "AbortError") return;
         console.warn("OSRM route unavailable:", err);
-        setRoutePoints([]);
+        setRoutesByMode({ ai: [], eco: [], classic: [] });
         setAlternativeRoutePoints([]);
         setRouteSource("OSRM indisponible");
       }
@@ -519,7 +768,7 @@ export default function RealMap({
       controller.abort();
       clearTimeout(t);
     };
-  }, [fromCity, toCity, waypointKey, hasRoute, incidentReroute]);
+  }, [fromCity, toCity, waypointKey, hasRoute, incidentReroute, enableModeAlternatives]);
 
   const incidentIndex =
     incidentReroute && routePoints.length > 4
@@ -535,15 +784,24 @@ export default function RealMap({
   const routeAfter = hasRealAlternative ? alternativeRoutePoints : [];
   const blockedBranch = incidentIndex > 0 ? routePoints.slice(incidentIndex) : [];
 
-  const incidentPt =
-    incidentIndex > 0 && blockedBranch.length > 1
-      ? blockedBranch[
-          Math.min(
-            Math.floor(blockedBranch.length * 0.28),
-            blockedBranch.length - 1
-          )
-        ]
-      : null;
+  // The path the truck actually drives. With an incident reroute, that's the
+  // segment before the obstacle stitched to the AI's recalculated detour —
+  // not the original blocked road.
+  const driverPath = hasRealAlternative
+    ? [...routeBefore, ...routeAfter]
+    : routePoints;
+
+  // Incident pin sits in the middle of the blocked stretch — that's the
+  // obstructed zone dispatchers actually care about. The fork point itself is
+  // visually unhelpful because the reroute often shadows the original road
+  // for a few hundred meters before peeling off.
+  const incidentPt = (() => {
+    if (incidentIndex <= 0) return null;
+    const blocked = blockedBranch;
+    if (!blocked.length) return null;
+    // Midpoint of the blocked branch.
+    return blocked[Math.floor(blocked.length * 0.5)] || blocked[0];
+  })();
   const fitPoints =
     routePoints.length > 1
       ? [
@@ -673,41 +931,27 @@ export default function RealMap({
         {/* Route itself */}
         {canShowRoute && routePoints.length > 1 ? (
           <>
-            {/* glow underlay */}
-            <Polyline
-              positions={routePoints}
-              pathOptions={{
-                color: routeVisual.main,
-                weight: 10,
-                opacity: 0.18,
-                lineCap: "round",
-              }}
-            />
-            {/* main line: animated via JS so the dash flow works in dev and prod */}
             {incidentIndex > 0 ? (
               <>
                 <AnimatedRoutePolyline
                   positions={routeBefore}
                   color={routeVisual.main}
                   weight={5.5}
-                  dash="18 18"
-                  speed={45}
+                  speed={250}
                 />
                 <AnimatedRoutePolyline
                   positions={blockedBranch}
                   color="#fb7185"
                   weight={4}
-                  dash="10 14"
-                  speed={30}
-                  opacity={hasRealAlternative ? 0.72 : 0.45}
+                  speed={110}
+                  opacity={hasRealAlternative ? 0.6 : 0.4}
                 />
                 {hasRealAlternative ? (
                   <AnimatedRoutePolyline
                     positions={routeAfter}
                     color="#a3e635"
                     weight={5.5}
-                    dash="18 18"
-                    speed={45}
+                    speed={250}
                   />
                 ) : null}
               </>
@@ -716,8 +960,7 @@ export default function RealMap({
                 positions={routePoints}
                 color={routeVisual.main}
                 weight={5.5}
-                dash="18 18"
-                speed={45}
+                speed={250}
               />
             )}
 
@@ -750,21 +993,26 @@ export default function RealMap({
               showStaticTruck ? (
                 <Marker
                   position={
-                    routePoints[
-                      Math.floor(routePoints.length * truckStartProgress)
-                    ] || routePoints[0]
+                    driverPath[
+                      Math.floor(driverPath.length * truckStartProgress)
+                    ] || driverPath[0]
                   }
                   icon={truckIcon()}
                 />
               ) : (
                 <TruckLayer
                   active={canShowRoute && showTruck}
-                  routePoints={routePoints}
+                  routePoints={driverPath}
                   startProgress={truckStartProgress}
+                  followTruck={followTruck}
                 />
               )
             ) : null}
-            <FitBounds points={fitPoints} fitKey={fitKey} />
+            {/* When the map is set to follow the truck, skip the auto-fit
+                that would otherwise zoom out to show the whole route. */}
+            {followTruck && showTruck ? null : (
+              <FitBounds points={fitPoints} fitKey={fitKey} />
+            )}
           </>
         ) : null}
 
@@ -785,7 +1033,7 @@ export default function RealMap({
             />
             <div>
               <div className="text-[9px] font-bold uppercase tracking-wider text-white/45">
-                Départ
+                {t("map.from")}
               </div>
               <div className="text-xs font-bold">
                 {cities[fromCity]?.label || "—"}
@@ -803,7 +1051,7 @@ export default function RealMap({
             />
             <div>
               <div className="text-[9px] font-bold uppercase tracking-wider text-white/45">
-                Arrivée
+                {t("map.to")}
               </div>
               <div className="text-xs font-bold">
                 {cities[toCity]?.label || "—"}

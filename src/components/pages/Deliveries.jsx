@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Package,
   Clock,
@@ -6,6 +7,7 @@ import {
   ShieldAlert,
   Truck,
   Route,
+  Crosshair,
 } from "lucide-react";
 import { cityCoords, deliveryStops, fleetVehicles } from "../../lib/constants";
 import {
@@ -111,6 +113,9 @@ export default function Deliveries({ selectedDelivery, onSelectDelivery }) {
     delivery: deliveryForVehicle(vehicle, index),
     statusInfo: vehicleStatusInfo(vehicle.status),
   }));
+
+  // Map auto-follows the truck when tracking an en_route vehicle.
+  const [followTruck, setFollowTruck] = useState(true);
 
   const enRouteCount = fleetVehicles.filter((v) => v.status === "en_route").length;
   const loadingCount = fleetVehicles.filter((v) => v.status === "loading").length;
@@ -241,7 +246,20 @@ export default function Deliveries({ selectedDelivery, onSelectDelivery }) {
                         ) : null}
                         <span className="inline-flex items-center gap-1">
                           <Clock size={11} />
-                          {vehicle.status === "idle" ? "En attente" : vehicle.eta ? `ETA ${vehicle.eta}` : "—"}
+                          {vehicle.status === "idle" ? (
+                            "En attente"
+                          ) : vehicle.eta ? (
+                            <>
+                              ETA {vehicle.eta}
+                              {vehicle.incident && vehicle.etaOriginal && vehicle.incidentDelayMin ? (
+                                <span className="ml-1.5 text-coral-300/90 text-[10.5px]">
+                                  (était {vehicle.etaOriginal} · +{vehicle.incidentDelayMin} min)
+                                </span>
+                              ) : null}
+                            </>
+                          ) : (
+                            "—"
+                          )}
                         </span>
                         {vehicle.status !== "idle" && (d.arrivalWindow || vehicle.arrivalWindow) ? (
                           <span className="inline-flex items-center gap-1">
@@ -286,7 +304,7 @@ export default function Deliveries({ selectedDelivery, onSelectDelivery }) {
             </Card>
           ) : null}
 
-          <div className="h-[420px] lg:h-[520px]">
+          <div className="h-[420px] lg:h-[520px] relative">
             <RealMap
               fromCity={mapStartCity}
               toCity={mapDestinationCity}
@@ -298,8 +316,28 @@ export default function Deliveries({ selectedDelivery, onSelectDelivery }) {
               showStaticTruck={false}
               truckStartProgress={selectedVehicle?.progress || 0.45}
               showTruck={Boolean(selectedVehicle?.status === "en_route")}
+              followTruck={Boolean(selectedVehicle?.status === "en_route") && followTruck}
               extraMarkers={selectedMapMarkers}
             />
+            {selectedVehicle?.status === "en_route" ? (
+              <button
+                onClick={() => setFollowTruck((v) => !v)}
+                className={`absolute z-[20] inline-flex items-center gap-1.5 px-3 h-9 rounded-full card-glass-strong text-[11.5px] font-bold uppercase tracking-wider transition pointer-events-auto ${
+                  followTruck
+                    ? "text-eco-300 border-eco-300/40"
+                    : "text-white/70 hover:text-white"
+                }`}
+                style={{ top: 12, right: 12 }}
+                title={
+                  followTruck
+                    ? "Désactiver le suivi"
+                    : "Suivre le camion sur la carte"
+                }
+              >
+                <Crosshair size={12} />
+                {followTruck ? "Suivi actif" : "Suivre le camion"}
+              </button>
+            ) : null}
           </div>
 
           <Card className="p-5">
@@ -354,7 +392,26 @@ export default function Deliveries({ selectedDelivery, onSelectDelivery }) {
 
                 {selectedVehicle?.incident ? (
                   <div className="mt-4 rounded-xl border border-coral-500/25 bg-coral-500/10 p-3 text-sm text-coral-300">
-                    Incident détecté sur la tournée : recalcul IA actif. Le véhicule reste en mouvement vers {selectedVehicle?.to}.
+                    <div className="font-semibold text-coral-200">
+                      Incident détecté · recalcul IA actif
+                    </div>
+                    <div className="mt-1 text-coral-300/90">
+                      Le véhicule reste en mouvement vers {selectedVehicle?.to}. L'IA a contourné la zone bloquée.
+                    </div>
+                    {selectedVehicle?.etaOriginal && selectedVehicle?.incidentDelayMin ? (
+                      <div className="mt-2 flex items-center gap-2 font-mono text-[12px]">
+                        <span className="line-through text-coral-300/60">
+                          ETA {selectedVehicle.etaOriginal}
+                        </span>
+                        <span className="text-coral-200">→</span>
+                        <span className="text-coral-100 font-semibold">
+                          ETA {selectedVehicle.eta}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-coral-500/20 text-coral-200 text-[11px]">
+                          +{selectedVehicle.incidentDelayMin} min
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
                 ) : selectedVehicle?.status === "loading" ? (
                   <div className="mt-4 rounded-xl border border-sand-500/25 bg-sand-500/10 p-3 text-sm text-sand-300">

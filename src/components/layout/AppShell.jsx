@@ -12,20 +12,24 @@ import {
   Clock,
   Activity,
   Command,
+  Languages,
 } from "lucide-react";
 import { Logo, LogoMark } from "../ui/Brand";
 import { LiveDot, Badge } from "../ui/Primitives";
 import { Kbd } from "../ui/Kbd";
+import { LANGS, useLang, useT } from "../../lib/i18n";
 
-const NAV = [
-  { key: "overview", label: "Vue d'ensemble", icon: LayoutDashboard },
-  { key: "planner", label: "Planification", icon: Route },
-  { key: "deliveries", label: "Livraisons", icon: ClipboardList },
-  { key: "fleet", label: "Flotte", icon: Truck },
-  { key: "analytics", label: "Analytique", icon: BarChart3 },
-  { key: "alerts", label: "Alertes", icon: Bell },
-  { key: "team", label: "Équipe", icon: Users },
-];
+function buildNav(t) {
+  return [
+    { key: "overview",   label: t("nav.overview"),   icon: LayoutDashboard },
+    { key: "planner",    label: t("nav.planner"),    icon: Route },
+    { key: "deliveries", label: t("nav.deliveries"), icon: ClipboardList },
+    { key: "fleet",      label: t("nav.fleet"),      icon: Truck },
+    { key: "analytics",  label: t("nav.analytics"),  icon: BarChart3 },
+    { key: "alerts",     label: t("nav.alerts"),     icon: Bell },
+    { key: "team",       label: t("nav.team"),       icon: Users },
+  ];
+}
 
 export default function AppShell({
   active,
@@ -38,8 +42,12 @@ export default function AppShell({
   onOpenCommand,
   children,
 }) {
+  const t = useT();
+  const { lang, setLang, dir } = useLang();
+  const NAV = buildNav(t);
+
   return (
-    <div className="flex min-h-screen bg-ink-950 text-white">
+    <div className="flex min-h-screen bg-ink-950 text-white" dir={dir}>
       {/* ------------ SIDEBAR ------------ */}
       <aside className="hidden md:flex flex-col w-[260px] shrink-0 border-r border-white/5 bg-ink-900/60 backdrop-blur-xl sticky top-0 h-screen">
         <div className="px-5 pt-6 pb-4">
@@ -52,7 +60,7 @@ export default function AppShell({
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/8 hover:border-white/16 hover:bg-white/[0.06] text-white/70 hover:text-white transition"
           >
             <Command size={13} strokeWidth={2} />
-            <span className="text-[12.5px] font-semibold">Recherche rapide</span>
+            <span className="text-[12.5px] font-semibold">{t("nav.search")}</span>
             <span className="ml-auto inline-flex items-center gap-1">
               <Kbd>⌘</Kbd>
               <Kbd>K</Kbd>
@@ -62,7 +70,7 @@ export default function AppShell({
 
         <div className="px-5 pb-2">
           <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/30">
-            Menu
+            {t("nav.menu")}
           </div>
         </div>
 
@@ -115,20 +123,18 @@ export default function AppShell({
               className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition-opacity"
               style={{ background: "rgba(163,230,53,0.35)" }}
             />
-            <div className="relative flex items-center gap-3 mb-2">
+            <div className="relative flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl eco-gradient-bg flex items-center justify-center text-ink-950 shrink-0">
                 <Bot size={18} strokeWidth={2.4} />
               </div>
               <div>
                 <div className="font-display font-bold text-sm">RouteBot</div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-eco-300">
-                  Assistant IA
+                <div className="text-[10px] font-bold uppercase tracking-wider text-eco-300 inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-eco-300 animate-pulse-dot" />
+                  {t("bot.online")}
                 </div>
               </div>
             </div>
-            <p className="relative text-[11px] text-white/60 leading-snug">
-              Posez une question en langage naturel.
-            </p>
           </button>
         </div>
 
@@ -137,7 +143,7 @@ export default function AppShell({
           <div className="px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs text-white/60">
               <Clock size={13} />
-              Heure Maroc
+              {t("topbar.morocco")}
             </div>
             <div className="font-display font-bold text-sm text-white tabular-nums">
               {liveTime}
@@ -146,10 +152,10 @@ export default function AppShell({
           <div className="px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs text-white/60">
               <LiveDot color="#34d399" />
-              Flotte
+              {t("topbar.fleet")}
             </div>
             <div className="font-display font-bold text-sm text-eco-300">
-              4/4 actifs
+              4/4 {t("topbar.fleet.active")}
             </div>
           </div>
         </div>
@@ -160,7 +166,7 @@ export default function AppShell({
             className="text-[11px] font-bold uppercase tracking-wider text-white/40 hover:text-white/80 transition inline-flex items-center gap-1.5"
           >
             <ArrowLeft size={12} />
-            Retour à l'accueil
+            {t("nav.back")}
           </button>
         </div>
       </aside>
@@ -210,19 +216,20 @@ export default function AppShell({
         <div className="hidden md:flex items-center justify-between sticky top-0 z-30 bg-ink-950/70 backdrop-blur-xl border-b border-white/5 px-8 py-4">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/40">
-              Console opérateur
+              {t("topbar.console")}
             </div>
             <h1 className="font-display font-bold text-xl tracking-tight mt-0.5">
               {NAV.find((n) => n.key === active)?.label}
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <LangToggle lang={lang} setLang={setLang} compact />
             <button
               onClick={onOpenAlerts}
               className="relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/8 hover:border-white/15 transition text-sm"
             >
               <Bell size={15} className="text-white/70" />
-              <span className="text-white/80 font-semibold">Alertes</span>
+              <span className="text-white/80 font-semibold">{t("topbar.alerts")}</span>
               {alertCount > 0 ? (
                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-coral-500 text-[9px] font-bold text-ink-950">
                   {alertCount}
@@ -230,13 +237,46 @@ export default function AppShell({
               ) : null}
             </button>
             <Badge color="eco" icon={Activity}>
-              Démo live
+              {t("topbar.demo")}
             </Badge>
           </div>
         </div>
 
         <div className="flex-1 min-w-0 relative">{children}</div>
       </main>
+    </div>
+  );
+}
+
+
+/* ---------- Language toggle ---------- */
+function LangToggle({ lang, setLang, compact = false }) {
+  return (
+    <div
+      className={`inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-white/[0.04] border border-white/10 ${
+        compact ? "" : ""
+      }`}
+      role="group"
+      aria-label="Language"
+    >
+      <Languages size={12} className="text-white/40 mx-1.5" />
+      {Object.values(LANGS).map((l) => {
+        const active = l.code === lang;
+        return (
+          <button
+            key={l.code}
+            onClick={() => setLang(l.code)}
+            className={`px-2 h-6 rounded-md text-[10.5px] font-bold uppercase tracking-wider transition ${
+              active
+                ? "bg-eco-400/20 text-eco-300 border border-eco-300/40"
+                : "text-white/55 hover:text-white border border-transparent"
+            }`}
+            title={l.name}
+          >
+            {l.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

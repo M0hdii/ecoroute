@@ -36,14 +36,18 @@ export function computeMetrics({
 
   const baseRoadDistance = Math.max(35, Math.round(totalAirDistance * 1.28));
 
+  // Distance variation by mode is small for a truck — drivers can't take real
+  // shortcuts because the rig won't fit.
   const distance =
     mode === "classic"
-      ? Math.round(baseRoadDistance * 0.96)
+      ? Math.round(baseRoadDistance * 0.98)
       : mode === "eco"
-        ? Math.round(baseRoadDistance * 1.04)
+        ? Math.round(baseRoadDistance * 1.03)
         : baseRoadDistance;
 
-  const averageSpeed = mode === "classic" ? 96 : mode === "eco" ? 76 : 86;
+  // Cruising speed of a loaded medium-duty truck on Moroccan roads (km/h).
+  // Capped well below car speeds because of governors, hills, and traffic.
+  const averageSpeed = mode === "classic" ? 82 : mode === "eco" ? 68 : 75;
 
   const scenarioDelay =
     scenarioKey === "rain" || scenarioKey === "weather"
@@ -54,17 +58,23 @@ export function computeMetrics({
           ? 0.12
           : 0;
 
-  // Extra stops add handling / unloading time, so the duration changes too.
-  const stopHandlingHours = Math.max(0, waypoints.length) * 0.18;
+  // Loading / unloading at each waypoint (~25–30 min per stop for a truck).
+  const stopHandlingHours = Math.max(0, waypoints.length) * 0.45;
   const baseTime = distance / averageSpeed;
   const estimatedTime = (baseTime * (1 + scenarioDelay) + stopHandlingHours).toFixed(1);
 
-  const fuelRate = mode === "classic" ? 0.135 : mode === "eco" ? 0.092 : 0.112;
+  // Diesel consumption rates for a ~12-tonne loaded truck (L/km).
+  // Eco mode = lower cruise, AI = balanced, Classic = harder push.
+  const fuelRate = mode === "classic" ? 0.36 : mode === "eco" ? 0.26 : 0.30;
   const fuelLiters = Math.round(distance * fuelRate);
-  const co2Kg = Math.round(fuelLiters * 2.45);
 
-  const costRate = mode === "classic" ? 3.45 : mode === "eco" ? 2.75 : 3.1;
-  const stopServiceCost = Math.max(0, waypoints.length) * 45;
+  // 2.68 kg CO₂ per liter of diesel (ADEME / EPA reference factors).
+  const co2Kg = Math.round(fuelLiters * 2.68);
+
+  // Per-km cost: diesel ~13 MAD/L + driver/maintenance/wear ≈ 5.5–6.5 MAD/km
+  // depending on intensity.
+  const costRate = mode === "classic" ? 6.4 : mode === "eco" ? 5.5 : 5.9;
+  const stopServiceCost = Math.max(0, waypoints.length) * 80;
 
   const riskLevel =
     scenarioKey === "rain" || scenarioKey === "weather" || scenarioKey === "incident"
@@ -88,9 +98,9 @@ export function computeMetrics({
  */
 export function computeSavings(metrics) {
   if (!metrics) return null;
-  const baselineFuel = Math.round(metrics.distanceKm * 0.135);
-  const baselineCo2 = Math.round(baselineFuel * 2.45);
-  const baselineCost = Math.round(metrics.distanceKm * 3.45);
+  const baselineFuel = Math.round(metrics.distanceKm * 0.36);
+  const baselineCo2 = Math.round(baselineFuel * 2.68);
+  const baselineCost = Math.round(metrics.distanceKm * 6.4);
 
   return {
     fuelSaved: Math.max(0, baselineFuel - metrics.fuelLiters),
