@@ -104,7 +104,7 @@ export default function App() {
           console.log("Route envoyée à l'IA :", aiPayload);
           setLastAiPayload(aiPayload);
 
-          const response = await fetch("http://localhost:5000/api/ai-route-decision", {
+          const response = await fetch("/api/ai-route-decision", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(aiPayload),
