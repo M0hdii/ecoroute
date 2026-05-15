@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -121,6 +121,79 @@ function incidentIcon() {
 }
 
 /* ---------- Helpers ---------- */
+/*
+  AnimatedRoutePolyline drives the dashed flow effect directly in JS by
+  updating the SVG path's stroke-dashoffset every frame on the underlying
+  Leaflet polyline. CSS-based animation through pathOptions.className was
+  unreliable across react-leaflet renders and production builds, so we
+  attach to the path element via the polyline ref and animate it ourselves.
+*/
+function AnimatedRoutePolyline({
+  positions,
+  color,
+  weight = 5.5,
+  dash = "14 18",
+  speed = 40,
+  opacity = 1,
+}) {
+  const polylineRef = useRef(null);
+  const offsetRef = useRef(0);
+  const rafRef = useRef(null);
+  const lastTimeRef = useRef(null);
+
+  const setDashAttrs = useCallback((path, dashValue, offsetValue) => {
+    if (!path) return;
+    path.setAttribute("stroke-dasharray", dashValue);
+    path.setAttribute("stroke-dashoffset", String(offsetValue));
+  }, []);
+
+  useEffect(() => {
+    const polyline = polylineRef.current;
+    if (!polyline) return undefined;
+    const path = polyline._path;
+    if (!path) return undefined;
+
+    setDashAttrs(path, dash, offsetRef.current);
+
+    function tick(now) {
+      if (lastTimeRef.current == null) lastTimeRef.current = now;
+      const elapsed = now - lastTimeRef.current;
+      lastTimeRef.current = now;
+
+      offsetRef.current -= (elapsed / 1000) * speed;
+      if (offsetRef.current < -10000) offsetRef.current = 0;
+
+      const livePath = polylineRef.current?._path;
+      if (livePath) {
+        livePath.setAttribute("stroke-dashoffset", String(offsetRef.current));
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      lastTimeRef.current = null;
+    };
+  }, [positions, dash, speed, setDashAttrs]);
+
+  return (
+    <Polyline
+      ref={polylineRef}
+      positions={positions}
+      pathOptions={{
+        color,
+        weight,
+        opacity,
+        lineCap: "round",
+        lineJoin: "round",
+      }}
+    />
+  );
+}
+
 function FitBounds({ points, fitKey }) {
   const map = useMap();
   const lastFitKeyRef = useRef(null);
@@ -610,56 +683,41 @@ export default function RealMap({
                 lineCap: "round",
               }}
             />
-            {/* main line */}
+            {/* main line: animated via JS so the dash flow works in dev and prod */}
             {incidentIndex > 0 ? (
               <>
-                <Polyline
+                <AnimatedRoutePolyline
                   positions={routeBefore}
-                  pathOptions={{
-                    color: routeVisual.main,
-                    weight: 5.5,
-                    opacity: 1,
-                    lineCap: "round",
-                    dashArray: "18 18",
-                    className: "route-animate-dash",
-                  }}
+                  color={routeVisual.main}
+                  weight={5.5}
+                  dash="18 18"
+                  speed={45}
                 />
-                <Polyline
+                <AnimatedRoutePolyline
                   positions={blockedBranch}
-                  pathOptions={{
-                    color: "#fb7185",
-                    weight: 4,
-                    opacity: hasRealAlternative ? 0.72 : 0.45,
-                    dashArray: "10 14",
-                    lineCap: "round",
-                    className: "route-animate-dash",
-                  }}
+                  color="#fb7185"
+                  weight={4}
+                  dash="10 14"
+                  speed={30}
+                  opacity={hasRealAlternative ? 0.72 : 0.45}
                 />
                 {hasRealAlternative ? (
-                  <Polyline
+                  <AnimatedRoutePolyline
                     positions={routeAfter}
-                    pathOptions={{
-                      color: "#a3e635",
-                      weight: 5.5,
-                      opacity: 1,
-                      dashArray: "18 18",
-                      lineCap: "round",
-                      className: "route-animate-dash",
-                    }}
+                    color="#a3e635"
+                    weight={5.5}
+                    dash="18 18"
+                    speed={45}
                   />
                 ) : null}
               </>
             ) : (
-              <Polyline
+              <AnimatedRoutePolyline
                 positions={routePoints}
-                pathOptions={{
-                  color: routeVisual.main,
-                  weight: 5.5,
-                  opacity: 1,
-                  lineCap: "round",
-                  dashArray: "18 18",
-                  className: "route-animate-dash",
-                }}
+                color={routeVisual.main}
+                weight={5.5}
+                dash="18 18"
+                speed={45}
               />
             )}
 
